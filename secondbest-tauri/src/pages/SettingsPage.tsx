@@ -8,9 +8,11 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ onHomeClick }) => {
   return (
     <div className="settings-page">
-      <button className="home-button" onClick={onHomeClick}>
-        🏠
-      </button>
+      <div className="settings-header">
+        <button className="home-button" onClick={onHomeClick}>
+          🏠
+        </button>
+      </div>
       
       <div className="settings-content">
         <h2 className="settings-title">設定</h2>
