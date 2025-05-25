@@ -9,9 +9,11 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = ({ onStartClick, onSettingsClick }) => {
   return (
     <div className="home-page">
-      <button className="settings-button" onClick={onSettingsClick}>
-        ⚙️
-      </button>
+      <div className="home-header">
+        <button className="settings-button" onClick={onSettingsClick}>
+          ⚙️
+        </button>
+      </div>
       
       <div className="home-content">
         <h1 className="app-title">Second Best</h1>
