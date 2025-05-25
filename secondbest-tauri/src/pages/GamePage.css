@@ -3,12 +3,14 @@
   background-color: #D7CCC8;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .game-header {
-  display: flex;
-  justify-content: flex-end;
-  padding: 20px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .game-buttons {
@@ -56,4 +58,5 @@
   justify-content: center;
   gap: 30px;
   padding: 20px;
+  height: 100vh;
 } 
