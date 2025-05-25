@@ -1,0 +1,70 @@
+.home-page {
+  height: 100vh;
+  background-color: #D7CCC8;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.settings-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background-color: #EFEBE9;
+  border: 2px solid #3E2723;
+  border-radius: 8px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.settings-button:hover {
+  background-color: #E0D7D3;
+  transform: scale(1.05);
+}
+
+.home-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+}
+
+.app-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #3E2723;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(62, 39, 35, 0.2);
+}
+
+.start-button {
+  background-color: #8D6E63;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 40px;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(62, 39, 35, 0.3);
+}
+
+.start-button:hover {
+  background-color: #6D4C41;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(62, 39, 35, 0.4);
+}
+
+.start-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(62, 39, 35, 0.3);
+} 

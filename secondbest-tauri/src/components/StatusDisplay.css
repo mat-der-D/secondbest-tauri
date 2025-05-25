@@ -1,0 +1,12 @@
+.status-display {
+  background-color: #EFEBE9;
+  color: #3E2723;
+  border: 1px solid #3E2723;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  margin: 10px 0;
+  box-shadow: 0 2px 4px rgba(62, 39, 35, 0.1);
+} 
