@@ -6,6 +6,14 @@ interface Piece {
   y: number;
 }
 
+const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: number) => {
+  const aspectRatio = originalHeight / originalWidth;
+  return {
+    width: targetWidth,
+    height: targetWidth * aspectRatio,
+  };
+}
+
 const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -36,18 +44,36 @@ const Board: React.FC = () => {
         // キャンバスをクリア
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // ボードの背景画像を描画
-        ctx.drawImage(boardImage, 0, 0, canvas.width, canvas.height);
+        // ボードの背景画像を縦横比を保持して描画
+        const { width: drawWidth, height: drawHeight } = adjustSize(
+          boardImage.width,
+          boardImage.height,
+          canvas.width
+        );
+        
+        // キャンバスの中央に配置するためのオフセットを計算
+        const offsetX = (canvas.width - drawWidth) / 2;
+        const offsetY = (canvas.height - drawHeight) / 2;
+        
+        ctx.drawImage(boardImage, offsetX, offsetY, drawWidth, drawHeight);
         
         // 配置された駒を描画
         pieces.forEach(piece => {
-          const pieceSize = 40; // 駒のサイズ
+          const pieceWidth = 40; // 駒のサイズの幅
+          
+          // adjustSize関数を使って駒のサイズを調整
+          const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
+            pieceImage.width,
+            pieceImage.height,
+            pieceWidth
+          );
+          
           ctx.drawImage(
             pieceImage,
-            piece.x - pieceSize / 2,
-            piece.y - pieceSize / 2,
-            pieceSize,
-            pieceSize
+            piece.x - drawPieceWidth / 2,
+            piece.y - drawPieceHeight / 2,
+            drawPieceWidth,
+            drawPieceHeight
           );
         });
       }
