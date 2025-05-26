@@ -37,6 +37,21 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piec
   return { x: relativeX + canvasCenterX, y: relativeY + canvasCenterY };
 };
 
+const calcPosRect = (canvasWidth: number, pieceWidth: number, posIndex: number) => {
+  const rectWidth = pieceWidth;
+  const rectTopHeight = pieceWidth * 1.2;
+  const rectBottomHeight = pieceWidth * 0.5;
+  const rectHeight = rectTopHeight + rectBottomHeight;
+  const { x: xBase, y: yBase } = calcPosCenter(canvasWidth, posIndex);
+  return {
+    x: xBase - rectWidth / 2,
+    y: yBase - rectTopHeight,
+    width: rectWidth,
+    height: rectHeight,
+  }
+};
+
+
 const Board: React.FC = () => {
   const canvasWidth = 350;
   const canvasHeight = 350;
