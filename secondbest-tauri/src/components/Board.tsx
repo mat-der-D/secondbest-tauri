@@ -37,15 +37,19 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piec
   return { x: relativeX + canvasCenterX, y: relativeY + canvasCenterY };
 };
 
-const calcPosRect = (canvasWidth: number, pieceWidth: number, posIndex: number) => {
+const calcPosRect = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number) => {
   const rectWidth = pieceWidth;
   const rectTopHeight = pieceWidth * 1.2;
   const rectBottomHeight = pieceWidth * 0.5;
   const rectHeight = rectTopHeight + rectBottomHeight;
-  const { x: xBase, y: yBase } = calcPosCenter(canvasWidth, posIndex);
+  const { x: xBase, y: yBase } = calcPosCenter(canvas.width, posIndex);
+
+  const canvasCenterX = canvas.width / 2;
+  const canvasCenterY = canvas.height / 2;
+
   return {
-    x: xBase - rectWidth / 2,
-    y: yBase - rectTopHeight,
+    x: canvasCenterX + xBase - rectWidth / 2,
+    y: canvasCenterY + yBase - rectTopHeight,
     width: rectWidth,
     height: rectHeight,
   }
@@ -110,7 +114,7 @@ const Board: React.FC = () => {
 
         // 各コマの位置に対応する場所に四角を描画
         for (let posIndex = 0; posIndex < 8; posIndex++) {
-          const { x, y, width, height } = calcPosRect(canvas.width, pieceWidth, posIndex);
+          const { x, y, width, height } = calcPosRect(canvas, pieceWidth, posIndex);
           ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
           ctx.fillRect(x, y, width, height);
         }
