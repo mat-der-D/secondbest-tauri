@@ -15,17 +15,21 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
   };
 };
 
+const calcPosCenter = (canvasWidth: number, posIndex: number) => {
+  const radiusX = 0.358;
+  const radiusY = radiusX * 0.8;
+  const angle = (-3 * Math.PI / 8) + (Math.PI / 4) * posIndex;
+  const [xBase, yBase] = [ radiusX * Math.cos(angle), radiusY * Math.sin(angle) ];
+  return { x: xBase * canvasWidth, y: yBase * canvasWidth };
+};
+
 const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piece: Piece) => {
   const dh0 = 0.12; // コマの底面の中心に補正する項
   const dh = 0.19; // コマの高さ
 
-  const radiusX = 0.358;
-  const radiusY = radiusX * 0.8;
-  const angle = (-3 * Math.PI / 8) + (Math.PI / 4) * piece.posIndex;
-  const [xBase, yBase] = [ radiusX * Math.cos(angle), radiusY * Math.sin(angle) ];
-
-  const relativeX = xBase * canvas.width;
-  const relativeY = yBase * canvas.width - (dh0 + dh * piece.heightIndex) * pieceWidth;
+  const { x: xBase, y: yBase } = calcPosCenter(canvas.width, piece.posIndex);
+  const relativeX = xBase;
+  const relativeY = yBase - (dh0 + dh * piece.heightIndex) * pieceWidth;
 
   const canvasCenterX = canvas.width / 2;
   const canvasCenterY = canvas.height / 2;
