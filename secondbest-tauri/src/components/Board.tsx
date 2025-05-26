@@ -2,8 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import './Board.css';
 
 interface Piece {
-  x: number;
-  y: number;
+  posIndex: number;
+  heightIndex: number;
 }
 
 const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: number) => {
@@ -14,7 +14,7 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
   };
 };
 
-const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number, heightIndex: number) => {
+const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piece: Piece) => {
   const dh0 = 0.12; // コマの底面の中心に補正する項
   const dh = 0.19; // コマの高さ
   const [x1, y1] = [0.137, 0.263];
@@ -23,10 +23,10 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, posI
   const [xBase, yBase] = [
     [x1, -y1], [x2, -y2], [x2, y2], [x1, y1],
     [-x1, y1], [-x2, y2], [-x2, -y2], [-x1, -y1],
-  ][posIndex];
+  ][piece.posIndex];
 
   const relativeX = xBase * canvas.width;
-  const relativeY = yBase * canvas.width - (dh0 + dh * heightIndex) * pieceWidth;
+  const relativeY = yBase * canvas.width - (dh0 + dh * piece.heightIndex) * pieceWidth;
 
   const canvasCenterX = canvas.width / 2;
   const canvasCenterY = canvas.height / 2;
@@ -84,6 +84,9 @@ const Board: React.FC = () => {
         
         // 配置された駒を描画
         pieces.forEach(piece => {
+          // 駒の座標を計算
+          const { x, y } = calcPieceCoordinate(canvas, pieceWidth, piece);
+          
           // adjustSize関数を使って駒のサイズを調整
           const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
             pieceImage.width,
@@ -93,8 +96,8 @@ const Board: React.FC = () => {
           
           ctx.drawImage(
             pieceImage,
-            piece.x - drawPieceWidth / 2,
-            piece.y - drawPieceHeight / 2,
+            x - drawPieceWidth / 2,
+            y - drawPieceHeight / 2,
             drawPieceWidth,
             drawPieceHeight
           );
@@ -109,10 +112,9 @@ const Board: React.FC = () => {
       // 駒の配置を計算
       const posIndex = clickCount % 8;
       const heightIndex = Math.floor(clickCount / 8);
-      const { x, y } = calcPieceCoordinate(canvas, pieceWidth, posIndex, heightIndex);
 
       // 新しい駒を追加
-      setPieces(prevPieces => [...prevPieces, { x, y }]);
+      setPieces(prevPieces => [...prevPieces, { posIndex, heightIndex }]);
       setClickCount(prevClick => prevClick + 1);
     }
   };
