@@ -39,11 +39,6 @@ const Board: React.FC = () => {
   const canvasHeight = 350;
   const pieceWidth = 50;
   
-  // クリック位置用の定数
-  const x = 50;  // canvasの中心を(0, 0)とする相対座標
-  const y = -100;
-  const dy = 60;
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [clickCount, setClickCount] = useState<number>(0);
