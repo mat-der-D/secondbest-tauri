@@ -39,8 +39,8 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piec
 
 const calcPosRect = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number) => {
   const rectWidth = pieceWidth;
-  const rectTopHeight = pieceWidth * 1.2;
-  const rectBottomHeight = pieceWidth * 0.5;
+  const rectTopHeight = pieceWidth * 0.97;
+  const rectBottomHeight = pieceWidth * 0.42;
   const rectHeight = rectTopHeight + rectBottomHeight;
   const { x: xBase, y: yBase } = calcPosCenter(canvas.width, posIndex);
 
