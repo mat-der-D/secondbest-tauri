@@ -4,6 +4,7 @@ import './Board.css';
 interface Piece {
   posIndex: number;
   heightIndex: number;
+  color: 'B' | 'W';
 }
 
 const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: number) => {
@@ -42,16 +43,24 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [clickCount, setClickCount] = useState<number>(0);
-  const [pieceImage, setPieceImage] = useState<HTMLImageElement | null>(null);
+  const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
+  const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
   const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    // 駒の画像を読み込む
-    const pieceImg = new Image();
-    pieceImg.onload = () => {
-      setPieceImage(pieceImg);
+    // 白コマの画像を読み込む
+    const pieceImgWhite = new Image();
+    pieceImgWhite.onload = () => {
+      setPieceImageWhite(pieceImgWhite);
     };
-    pieceImg.src = '/src/assets/piece_white.svg';
+    pieceImgWhite.src = '/src/assets/piece_white.svg';
+
+    // 黒コマの画像を読み込む
+    const pieceImgBlack = new Image();
+    pieceImgBlack.onload = () => {
+      setPieceImageBlack(pieceImgBlack);
+    };
+    pieceImgBlack.src = '/src/assets/piece_black.svg';
 
     // ボードの背景画像を読み込む
     const boardImg = new Image();
@@ -63,7 +72,7 @@ const Board: React.FC = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImage && boardImage) {
+    if (canvas && pieceImageWhite && pieceImageBlack && boardImage) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // キャンバスをクリア
@@ -87,6 +96,9 @@ const Board: React.FC = () => {
           // 駒の座標を計算
           const { x, y } = calcPieceCoordinate(canvas, pieceWidth, piece);
           
+          // 色に応じて適切な画像を選択
+          const pieceImage = piece.color === 'W' ? pieceImageWhite : pieceImageBlack;
+          
           // adjustSize関数を使って駒のサイズを調整
           const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
             pieceImage.width,
@@ -104,7 +116,7 @@ const Board: React.FC = () => {
         });
       }
     }
-  }, [pieces, pieceImage, boardImage]);
+  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -112,9 +124,12 @@ const Board: React.FC = () => {
       // 駒の配置を計算
       const posIndex = clickCount % 8;
       const heightIndex = Math.floor(clickCount / 8);
+      
+      // クリック回数の偶奇に応じて色を決定（偶数: 白、奇数: 黒）
+      const color: 'B' | 'W' = clickCount % 2 === 0 ? 'W' : 'B';
 
       // 新しい駒を追加
-      setPieces(prevPieces => [...prevPieces, { posIndex, heightIndex }]);
+      setPieces(prevPieces => [...prevPieces, { posIndex, heightIndex, color }]);
       setClickCount(prevClick => prevClick + 1);
     }
   };
