@@ -18,9 +18,15 @@ const Board: React.FC = () => {
   const canvasWidth = 350;
   const canvasHeight = 350;
   const pieceWidth = 50;
+  
+  // クリック位置用の定数
+  const x = 50;  // canvasの中心を(0, 0)とする相対座標
+  const y = -100;
+  const dy = 60;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
+  const [clickCount, setClickCount] = useState<number>(0);
   const [pieceImage, setPieceImage] = useState<HTMLImageElement | null>(null);
   const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
 
@@ -85,12 +91,24 @@ const Board: React.FC = () => {
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      // クリック回数をインクリメント（1から開始）
+      const currentClick = clickCount + 1;
+      
+      // canvas中心を(0, 0)とする座標系から実際のcanvas座標に変換
+      const canvasCenterX = canvas.width / 2;
+      const canvasCenterY = canvas.height / 2;
+      
+      // n回目のクリックでは (x, y + (n-1)*dy) に配置
+      const relativeX = x;
+      const relativeY = y + (currentClick - 1) * dy;
+      
+      // 実際のcanvas座標に変換
+      const actualX = canvasCenterX + relativeX;
+      const actualY = canvasCenterY + relativeY;
       
       // 新しい駒を追加
-      setPieces(prevPieces => [...prevPieces, { x, y }]);
+      setPieces(prevPieces => [...prevPieces, { x: actualX, y: actualY }]);
+      setClickCount(currentClick);
     }
   };
 
