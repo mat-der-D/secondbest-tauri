@@ -15,9 +15,10 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
 };
 
 const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number, heightIndex: number) => {
-  const dh = 0.19;
-  const [x1, y1] = [0.137, 0.248];
-  const [x2, y2] = [0.330, 0.095];
+  const dh0 = 0.12; // コマの底面の中心に補正する項
+  const dh = 0.19; // コマの高さ
+  const [x1, y1] = [0.137, 0.263];
+  const [x2, y2] = [0.330, 0.110];
 
   const [xBase, yBase] = [
     [x1, -y1], [x2, -y2], [x2, y2], [x1, y1],
@@ -25,7 +26,7 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, posI
   ][posIndex];
 
   const relativeX = xBase * canvas.width;
-  const relativeY = yBase * canvas.width - dh * heightIndex * pieceWidth;
+  const relativeY = yBase * canvas.width - (dh0 + dh * heightIndex) * pieceWidth;
 
   const canvasCenterX = canvas.width / 2;
   const canvasCenterY = canvas.height / 2;
