@@ -15,6 +15,10 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
 }
 
 const Board: React.FC = () => {
+  const canvasWidth = 350;
+  const canvasHeight = 350;
+  const pieceWidth = 50;
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [pieceImage, setPieceImage] = useState<HTMLImageElement | null>(null);
@@ -59,8 +63,6 @@ const Board: React.FC = () => {
         
         // 配置された駒を描画
         pieces.forEach(piece => {
-          const pieceWidth = 40; // 駒のサイズの幅
-          
           // adjustSize関数を使って駒のサイズを調整
           const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
             pieceImage.width,
@@ -97,8 +99,8 @@ const Board: React.FC = () => {
       <canvas 
         ref={canvasRef}
         className="board-canvas"
-        width={300}
-        height={200}
+        width={canvasWidth}
+        height={canvasHeight}
         onClick={handleCanvasClick}
       />
     </div>
