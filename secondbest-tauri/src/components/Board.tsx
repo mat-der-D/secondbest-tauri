@@ -12,7 +12,26 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
     width: targetWidth,
     height: targetWidth * aspectRatio,
   };
-}
+};
+
+const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number, heightIndex: number) => {
+  const dh = 0.19;
+  const [x1, y1] = [0.137, 0.248];
+  const [x2, y2] = [0.330, 0.095];
+
+  const [xBase, yBase] = [
+    [x1, -y1], [x2, -y2], [x2, y2], [x1, y1],
+    [-x1, y1], [-x2, y2], [-x2, -y2], [-x1, -y1],
+  ][posIndex];
+
+  const relativeX = xBase * canvas.width;
+  const relativeY = yBase * canvas.width - dh * heightIndex * pieceWidth;
+
+  const canvasCenterX = canvas.width / 2;
+  const canvasCenterY = canvas.height / 2;
+
+  return { x: relativeX + canvasCenterX, y: relativeY + canvasCenterY };
+};
 
 const Board: React.FC = () => {
   const canvasWidth = 350;
@@ -91,24 +110,14 @@ const Board: React.FC = () => {
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (canvas) {
-      // クリック回数をインクリメント（1から開始）
-      const currentClick = clickCount + 1;
-      
-      // canvas中心を(0, 0)とする座標系から実際のcanvas座標に変換
-      const canvasCenterX = canvas.width / 2;
-      const canvasCenterY = canvas.height / 2;
-      
-      // n回目のクリックでは (x, y + (n-1)*dy) に配置
-      const relativeX = x;
-      const relativeY = y + (currentClick - 1) * dy;
-      
-      // 実際のcanvas座標に変換
-      const actualX = canvasCenterX + relativeX;
-      const actualY = canvasCenterY + relativeY;
-      
+      // 駒の配置を計算
+      const posIndex = clickCount % 8;
+      const heightIndex = Math.floor(clickCount / 8);
+      const { x, y } = calcPieceCoordinate(canvas, pieceWidth, posIndex, heightIndex);
+
       // 新しい駒を追加
-      setPieces(prevPieces => [...prevPieces, { x: actualX, y: actualY }]);
-      setClickCount(currentClick);
+      setPieces(prevPieces => [...prevPieces, { x, y }]);
+      setClickCount(prevClick => prevClick + 1);
     }
   };
 
