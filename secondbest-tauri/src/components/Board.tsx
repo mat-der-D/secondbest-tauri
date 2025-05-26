@@ -10,25 +10,34 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [pieceImage, setPieceImage] = useState<HTMLImageElement | null>(null);
+  const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    // SVG画像を読み込む
-    const img = new Image();
-    img.onload = () => {
-      setPieceImage(img);
+    // 駒の画像を読み込む
+    const pieceImg = new Image();
+    pieceImg.onload = () => {
+      setPieceImage(pieceImg);
     };
-    // SVGをData URLに変換して読み込む
-    img.src = '/src/assets/piece_white.svg';
+    pieceImg.src = '/src/assets/piece_white.svg';
+
+    // ボードの背景画像を読み込む
+    const boardImg = new Image();
+    boardImg.onload = () => {
+      setBoardImage(boardImg);
+    };
+    boardImg.src = '/src/assets/board.svg';
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImage) {
+    if (canvas && pieceImage && boardImage) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // キャンバスを白い背景でクリア
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // キャンバスをクリア
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // ボードの背景画像を描画
+        ctx.drawImage(boardImage, 0, 0, canvas.width, canvas.height);
         
         // 配置された駒を描画
         pieces.forEach(piece => {
@@ -43,7 +52,7 @@ const Board: React.FC = () => {
         });
       }
     }
-  }, [pieces, pieceImage]);
+  }, [pieces, pieceImage, boardImage]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
