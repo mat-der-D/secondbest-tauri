@@ -155,28 +155,24 @@ const Board: React.FC = () => {
       const clickY = event.clientY - rect.top;
       
       // どのposIndexの領域内がクリックされたかを判定
-      let clickedPosIndex = -1;
-      for (let posIndex = 0; posIndex < 8; posIndex++) {
+      const clickedPosIndex = Array.from({ length: 8 }).findIndex((_, posIndex) => {
         const { x, y, width, height } = calcPosRect(canvas, pieceWidth, posIndex);
-        if (clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height) {
-          clickedPosIndex = posIndex;
-          break;
-        }
-      }
-      
-      // 領域内がクリックされた場合のみコマを配置
-      if (clickedPosIndex !== -1) {
-        // その位置に既に配置されているコマの数を数える
-        const existingPiecesAtPos = pieces.filter(piece => piece.posIndex === clickedPosIndex);
-        const heightIndex = existingPiecesAtPos.length;
-        
-        // クリック回数の偶奇に応じて色を決定（偶数: 白、奇数: 黒）
-        const color: 'B' | 'W' = clickCount % 2 === 0 ? 'W' : 'B';
+        return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
+      });
 
-        // 新しい駒を追加
-        setPieces(prevPieces => [...prevPieces, { posIndex: clickedPosIndex, heightIndex, color }]);
-        setClickCount(prevClick => prevClick + 1);
-      }
+      // クリックされた位置が領域内にない場合は何もしない
+      if ( clickedPosIndex === -1 ) return;
+      
+      // その位置に既に配置されているコマの数を数える
+      const existingPiecesAtPos = pieces.filter(piece => piece.posIndex === clickedPosIndex);
+      const heightIndex = existingPiecesAtPos.length;
+      
+      // クリック回数の偶奇に応じて色を決定（偶数: 白、奇数: 黒）
+      const color: 'B' | 'W' = clickCount % 2 === 0 ? 'W' : 'B';
+
+      // 新しい駒を追加
+      setPieces(prevPieces => [...prevPieces, { posIndex: clickedPosIndex, heightIndex, color }]);
+      setClickCount(prevClick => prevClick + 1);
     }
   };
 
