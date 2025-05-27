@@ -15,26 +15,27 @@ const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: 
   };
 };
 
-const calcPosCenter = (canvasWidth: number, posIndex: number) => {
+const calcPosCenter = (canvas: HTMLCanvasElement, posIndex: number) => {
   const radiusX = 0.358;
   const radiusY = radiusX * 0.8;
   const angle = (-3 * Math.PI / 8) + (Math.PI / 4) * posIndex;
   const [xBase, yBase] = [ radiusX * Math.cos(angle), radiusY * Math.sin(angle) ];
-  return { x: xBase * canvasWidth, y: yBase * canvasWidth };
+  
+  const canvasCenterX = canvas.width / 2;
+  const canvasCenterY = canvas.height / 2;
+  
+  return { 
+    x: xBase * canvas.width + canvasCenterX, 
+    y: yBase * canvas.width + canvasCenterY 
+  };
 };
 
 const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piece: Piece) => {
   const dh0 = 0.12; // コマの底面の中心に補正する項
   const dh = 0.19; // コマの高さ
 
-  const { x: xBase, y: yBase } = calcPosCenter(canvas.width, piece.posIndex);
-  const relativeX = xBase;
-  const relativeY = yBase - (dh0 + dh * piece.heightIndex) * pieceWidth;
-
-  const canvasCenterX = canvas.width / 2;
-  const canvasCenterY = canvas.height / 2;
-
-  return { x: relativeX + canvasCenterX, y: relativeY + canvasCenterY };
+  const { x: xBase, y: yBase } = calcPosCenter(canvas, piece.posIndex);
+  return { x: xBase, y: yBase - (dh0 + dh * piece.heightIndex) * pieceWidth };
 };
 
 const calcPosRect = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: number) => {
@@ -42,14 +43,11 @@ const calcPosRect = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: nu
   const rectTopHeight = pieceWidth * 0.97;
   const rectBottomHeight = pieceWidth * 0.42;
   const rectHeight = rectTopHeight + rectBottomHeight;
-  const { x: xBase, y: yBase } = calcPosCenter(canvas.width, posIndex);
-
-  const canvasCenterX = canvas.width / 2;
-  const canvasCenterY = canvas.height / 2;
+  const { x: xBase, y: yBase } = calcPosCenter(canvas, posIndex);
 
   return {
-    x: canvasCenterX + xBase - rectWidth / 2,
-    y: canvasCenterY + yBase - rectTopHeight,
+    x: xBase - rectWidth / 2,
+    y: yBase - rectTopHeight,
     width: rectWidth,
     height: rectHeight,
   }
