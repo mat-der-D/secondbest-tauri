@@ -112,13 +112,6 @@ const Board: React.FC = () => {
         
         ctx.drawImage(boardImage, offsetX, offsetY, drawWidth, drawHeight);
 
-        // 各コマの位置に対応する場所に四角を描画
-        for (let posIndex = 0; posIndex < 8; posIndex++) {
-          const { x, y, width, height } = calcPosRect(canvas, pieceWidth, posIndex);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-          ctx.fillRect(x, y, width, height);
-        }
-        
         // 配置された駒を描画
         pieces.forEach(piece => {
           // 駒の座標を計算
