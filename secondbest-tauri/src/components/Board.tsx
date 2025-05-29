@@ -65,6 +65,8 @@ const Board: React.FC = () => {
   const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
   const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
   const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
+  const [pieceFrameImage, setPieceFrameImage] = useState<HTMLImageElement | null>(null);
+  const [cellFrameImage, setCellFrameImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     // 白コマの画像を読み込む
@@ -87,6 +89,20 @@ const Board: React.FC = () => {
       setBoardImage(boardImg);
     };
     boardImg.src = '/src/assets/board.svg';
+    
+    // コマのフレーム画像を読み込む
+    const pieceFrameImg = new Image();
+    pieceFrameImg.onload = () => {
+      setPieceFrameImage(pieceFrameImg);
+    };
+    pieceFrameImg.src = '/src/assets/piece_frame.svg';
+    
+    // セルのフレーム画像を読み込む
+    const cellFrameImg = new Image();
+    cellFrameImg.onload = () => {
+      setCellFrameImage(cellFrameImg);
+    };
+    cellFrameImg.src = '/src/assets/cell_frame.svg';
   }, []);
 
   useEffect(() => {
