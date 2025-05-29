@@ -58,9 +58,11 @@ const Board: React.FC = () => {
   const canvasWidth = 350;
   const canvasHeight = 350;
   const pieceWidth = 50;
+  const cellWidth = 70; // マスの幅を定義
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
+  const [highlightedCells, setHighlightedCells] = useState<number[]>([]); // 赤いマスを表示する位置
   const [clickCount, setClickCount] = useState<number>(0);
   const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
   const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
@@ -103,11 +105,14 @@ const Board: React.FC = () => {
       setCellFrameImage(cellFrameImg);
     };
     cellFrameImg.src = '/src/assets/cell_frame.svg';
+
+    // 初期状態で特定のセルをハイライト（テスト用）
+    setHighlightedCells([0, 3, 6]);
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImageWhite && pieceImageBlack && boardImage) {
+    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // キャンバスをクリア
@@ -125,6 +130,24 @@ const Board: React.FC = () => {
         const offsetY = (canvas.height - drawHeight) / 2;
         
         ctx.drawImage(boardImage, offsetX, offsetY, drawWidth, drawHeight);
+
+        // ハイライトされたセルを描画
+        highlightedCells.forEach(posIndex => {
+          const { x, y } = calcPosCenter(canvas, posIndex);
+          const { width: drawCellWidth, height: drawCellHeight } = adjustSize(
+            cellFrameImage.width,
+            cellFrameImage.height,
+            cellWidth
+          );
+          
+          ctx.drawImage(
+            cellFrameImage,
+            x - drawCellWidth / 2,
+            y - drawCellHeight / 2,
+            drawCellWidth,
+            drawCellHeight
+          );
+        });
 
         // 配置された駒を描画
         pieces.forEach(piece => {
@@ -151,7 +174,7 @@ const Board: React.FC = () => {
         });
       }
     }
-  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage]);
+  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, highlightedCells]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -180,6 +203,15 @@ const Board: React.FC = () => {
       // 新しい駒を追加
       setPieces(prevPieces => [...prevPieces, { posIndex: clickedPosIndex, heightIndex, color }]);
       setClickCount(prevClick => prevClick + 1);
+      
+      // クリックしたセルをハイライトする配列を更新（トグル）
+      setHighlightedCells(prevCells => {
+        if (prevCells.includes(clickedPosIndex)) {
+          return prevCells.filter(index => index !== clickedPosIndex);
+        } else {
+          return [...prevCells, clickedPosIndex];
+        }
+      });
     }
   };
 
