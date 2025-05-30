@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="116.942675pt" viewBox="0 0 720 116.942675" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="153.728428pt" viewBox="0 0 720 153.728428" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2025-05-30T19:33:07.816123</dc:date>
+    <dc:date>2025-05-30T19:48:54.529346</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,46 +21,46 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 116.942675 
-L 720 116.942675 
+   <path d="M 0 153.728428 
+L 720 153.728428 
 L 720 0 
 L 0 0 
-L 0 116.942675 
+L 0 153.728428 
 z
 " style="fill: none"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 0 108.343949 
-L 720 108.343949 
-L 720 8.598726 
-L 0 8.598726 
+    <path d="M 0 147.949164 
+L 720 147.949164 
+L 720 5.779264 
+L 0 5.779264 
 z
-" clip-path="url(#p2b303dd393)" style="fill: #d7ccc8; opacity: 0.7"/>
+" clip-path="url(#p6291869b93)" style="fill: #d7ccc8; opacity: 0.7"/>
    </g>
    <g id="line2d_1">
-    <path d="M 0 15.477707 
-L 720 15.477707 
-" clip-path="url(#p2b303dd393)" style="fill: none; stroke: #3e2723; stroke-width: 2; stroke-linecap: square"/>
+    <path d="M 0 19.071572 
+L 720 19.071572 
+" clip-path="url(#p6291869b93)" style="fill: none; stroke: #3e2723; stroke-width: 3; stroke-linecap: square"/>
    </g>
    <g id="line2d_2">
-    <path d="M 0 8.598726 
-L 720 8.598726 
-" clip-path="url(#p2b303dd393)" style="fill: none; stroke: #3e2723; stroke-width: 5; stroke-linecap: square"/>
+    <path d="M 0 5.779264 
+L 720 5.779264 
+" clip-path="url(#p6291869b93)" style="fill: none; stroke: #3e2723; stroke-width: 6; stroke-linecap: square"/>
    </g>
    <g id="line2d_3">
-    <path d="M 0 101.464968 
-L 720 101.464968 
-" clip-path="url(#p2b303dd393)" style="fill: none; stroke: #3e2723; stroke-width: 2; stroke-linecap: square"/>
+    <path d="M 0 134.656856 
+L 720 134.656856 
+" clip-path="url(#p6291869b93)" style="fill: none; stroke: #3e2723; stroke-width: 3; stroke-linecap: square"/>
    </g>
    <g id="line2d_4">
-    <path d="M 0 108.343949 
-L 720 108.343949 
-" clip-path="url(#p2b303dd393)" style="fill: none; stroke: #3e2723; stroke-width: 5; stroke-linecap: square"/>
+    <path d="M 0 147.949164 
+L 720 147.949164 
+" clip-path="url(#p6291869b93)" style="fill: none; stroke: #3e2723; stroke-width: 6; stroke-linecap: square"/>
    </g>
    <g id="text_1">
     <!-- Second Best! -->
-    <g style="fill: #3e2723" transform="translate(212.921875 69.508838) scale(0.4 -0.4)">
+    <g style="fill: #3e2723" transform="translate(139.382812 93.420464) scale(0.6 -0.6)">
      <defs>
       <path id="DejaVuSerif-Bold-53" d="M 494 225 
 L 494 1331 
@@ -354,8 +354,8 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p2b303dd393">
-   <rect x="0" y="-0" width="720" height="116.942675"/>
+  <clipPath id="p6291869b93">
+   <rect x="0" y="0" width="720" height="153.728428"/>
   </clipPath>
  </defs>
 </svg>
