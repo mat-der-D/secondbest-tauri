@@ -87,11 +87,13 @@ const Board: React.FC = () => {
   const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]); // ハイライトするコマの位置
   const [liftedPieces, setLiftedPieces] = useState<number[]>([]); // 持ち上げるコマの位置のposIndex
   const [clickCount, setClickCount] = useState<number>(0);
+  const [showSecondBest, setShowSecondBest] = useState<boolean>(false); // secondbest.svgの表示・非表示を管理
   const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
   const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
   const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
   const [pieceFrameImage, setPieceFrameImage] = useState<HTMLImageElement | null>(null);
   const [cellFrameImage, setCellFrameImage] = useState<HTMLImageElement | null>(null);
+  const [secondBestImage, setSecondBestImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     // 白コマの画像を読み込む
@@ -128,11 +130,18 @@ const Board: React.FC = () => {
       setCellFrameImage(cellFrameImg);
     };
     cellFrameImg.src = '/src/assets/cell_frame.svg';
+
+    // secondbest.svgを読み込む
+    const secondBestImg = new Image();
+    secondBestImg.onload = () => {
+      setSecondBestImage(secondBestImg);
+    };
+    secondBestImg.src = '/src/assets/secondbest.svg';
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage && pieceFrameImage) {
+    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage && pieceFrameImage && secondBestImage) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // キャンバスをクリア
@@ -234,9 +243,30 @@ const Board: React.FC = () => {
             );
           }
         });
+
+        // secondbest.svgを表示する場合
+        if (showSecondBest) {
+          const { width: drawSecondBestWidth, height: drawSecondBestHeight } = adjustSize(
+            secondBestImage.width,
+            secondBestImage.height,
+            canvas.width
+          );
+          
+          // キャンバスの中央に配置するためのオフセットを計算
+          const secondBestOffsetX = (canvas.width - drawSecondBestWidth) / 2;
+          const secondBestOffsetY = (canvas.height - drawSecondBestHeight) / 2;
+          
+          ctx.drawImage(
+            secondBestImage,
+            secondBestOffsetX,
+            secondBestOffsetY,
+            drawSecondBestWidth,
+            drawSecondBestHeight
+          );
+        }
       }
     }
-  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, pieceFrameImage, highlightedCells, highlightedPieces, liftedPieces]);
+  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, pieceFrameImage, secondBestImage, highlightedCells, highlightedPieces, liftedPieces, showSecondBest]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -254,6 +284,9 @@ const Board: React.FC = () => {
 
       // クリックされた位置が領域内にない場合は何もしない
       if (clickedPosIndex === -1) return;
+      
+      // secondbest.svgの表示・非表示を切り替える
+      setShowSecondBest(prevShow => !prevShow);
       
       // マスのリフト状態を切り替える
       setLiftedPieces(prevLiftedPieces => {
