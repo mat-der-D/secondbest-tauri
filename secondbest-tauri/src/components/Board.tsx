@@ -63,6 +63,7 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<number[]>([]); // 赤いマスを表示する位置
+  const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]); // ハイライトするコマの位置
   const [clickCount, setClickCount] = useState<number>(0);
   const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
   const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
@@ -108,11 +109,13 @@ const Board: React.FC = () => {
 
     // 初期状態で特定のセルをハイライト（テスト用）
     setHighlightedCells([0, 3, 6]);
+    // 初期状態で特定のコマをハイライト（テスト用）
+    setHighlightedPieces([0, 4]);
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage) {
+    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage && pieceFrameImage) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // キャンバスをクリア
@@ -172,9 +175,44 @@ const Board: React.FC = () => {
             drawPieceHeight
           );
         });
+        
+        // 各posIndexごとに最も高いheightIndexを持つコマの位置を計算
+        const posMaxHeightMap = new Map<number, number>();
+        
+        // 各位置における最大のheightIndexを計算
+        pieces.forEach(piece => {
+          const currentMax = posMaxHeightMap.get(piece.posIndex) || -1;
+          if (piece.heightIndex > currentMax) {
+            posMaxHeightMap.set(piece.posIndex, piece.heightIndex);
+          }
+        });
+        
+        // ハイライトされたposIndexの位置だけフレームを描画
+        highlightedPieces.forEach(posIndex => {
+          const maxHeight = posMaxHeightMap.get(posIndex);
+          // その位置にコマがある場合のみフレームを描画
+          if (maxHeight !== undefined) {
+            const topPiece: Piece = { posIndex, heightIndex: maxHeight, color: 'W' }; // 色は描画に影響しないのでどちらでも良い
+            const { x, y } = calcPieceCoordinate(canvas, pieceWidth, topPiece);
+            
+            const { width: drawFrameWidth, height: drawFrameHeight } = adjustSize(
+              pieceFrameImage.width,
+              pieceFrameImage.height,
+              pieceWidth
+            );
+            
+            ctx.drawImage(
+              pieceFrameImage,
+              x - drawFrameWidth / 2,
+              y - drawFrameHeight / 2,
+              drawFrameWidth,
+              drawFrameHeight
+            );
+          }
+        });
       }
     }
-  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, highlightedCells]);
+  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, pieceFrameImage, highlightedCells, highlightedPieces]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -210,6 +248,15 @@ const Board: React.FC = () => {
           return prevCells.filter(index => index !== clickedPosIndex);
         } else {
           return [...prevCells, clickedPosIndex];
+        }
+      });
+      
+      // クリックしたコマの位置をハイライトする配列を更新（トグル）
+      setHighlightedPieces(prevPieces => {
+        if (prevPieces.includes(clickedPosIndex)) {
+          return prevPieces.filter(index => index !== clickedPosIndex);
+        } else {
+          return [...prevPieces, clickedPosIndex];
         }
       });
     }
