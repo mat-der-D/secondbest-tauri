@@ -64,7 +64,7 @@ const Board: React.FC = () => {
   const canvasHeight = 350;
   const pieceWidth = 50;
   const cellWidth = 70; // マスの幅を定義
-  const pieceLifeOffsetRatio = 0.3; // コマを持ち上げる高さ（pieceWidthに対する倍率）
+  const pieceLifeOffsetRatio = 0.2; // コマを持ち上げる高さ（pieceWidthに対する倍率）
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pieces, setPieces] = useState<Piece[]>(() => {
