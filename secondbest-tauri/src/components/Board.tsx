@@ -106,11 +106,6 @@ const Board: React.FC = () => {
       setCellFrameImage(cellFrameImg);
     };
     cellFrameImg.src = '/src/assets/cell_frame.svg';
-
-    // 初期状態で特定のセルをハイライト（テスト用）
-    setHighlightedCells([0, 3, 6]);
-    // 初期状態で特定のコマをハイライト（テスト用）
-    setHighlightedPieces([0, 4]);
   }, []);
 
   useEffect(() => {
@@ -241,24 +236,6 @@ const Board: React.FC = () => {
       // 新しい駒を追加
       setPieces(prevPieces => [...prevPieces, { posIndex: clickedPosIndex, heightIndex, color }]);
       setClickCount(prevClick => prevClick + 1);
-      
-      // クリックしたセルをハイライトする配列を更新（トグル）
-      setHighlightedCells(prevCells => {
-        if (prevCells.includes(clickedPosIndex)) {
-          return prevCells.filter(index => index !== clickedPosIndex);
-        } else {
-          return [...prevCells, clickedPosIndex];
-        }
-      });
-      
-      // クリックしたコマの位置をハイライトする配列を更新（トグル）
-      setHighlightedPieces(prevPieces => {
-        if (prevPieces.includes(clickedPosIndex)) {
-          return prevPieces.filter(index => index !== clickedPosIndex);
-        } else {
-          return [...prevPieces, clickedPosIndex];
-        }
-      });
     }
   };
 
