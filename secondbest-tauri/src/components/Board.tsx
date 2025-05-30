@@ -1,12 +1,41 @@
 import React, { useRef, useEffect, useState } from 'react';
 import './Board.css';
 
+// 定数定義
+const BOARD_CONSTANTS = {
+  CANVAS_WIDTH: 350,
+  CANVAS_HEIGHT: 350,
+  PIECE_WIDTH: 50,
+  CELL_WIDTH: 70,
+  PIECE_LIFT_OFFSET_RATIO: 0.2,
+} as const;
+
+const IMAGE_PATHS = {
+  pieceWhite: '/src/assets/piece_white.svg',
+  pieceBlack: '/src/assets/piece_black.svg',
+  board: '/src/assets/board.svg',
+  pieceFrame: '/src/assets/piece_frame.svg',
+  cellFrame: '/src/assets/cell_frame.svg',
+  secondBest: '/src/assets/secondbest.svg',
+} as const;
+
+// 型定義
 interface Piece {
   posIndex: number;
   heightIndex: number;
   color: 'B' | 'W';
 }
 
+interface Images {
+  pieceWhite: HTMLImageElement | null;
+  pieceBlack: HTMLImageElement | null;
+  board: HTMLImageElement | null;
+  pieceFrame: HTMLImageElement | null;
+  cellFrame: HTMLImageElement | null;
+  secondBest: HTMLImageElement | null;
+}
+
+// ユーティリティ関数
 const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: number) => {
   const aspectRatio = originalHeight / originalWidth;
   return {
@@ -19,7 +48,7 @@ const calcPosCenter = (canvas: HTMLCanvasElement, posIndex: number) => {
   const radiusX = 0.358;
   const radiusY = radiusX * 0.8;
   const angle = (-3 * Math.PI / 8) + (Math.PI / 4) * posIndex;
-  const [xBase, yBase] = [ radiusX * Math.cos(angle), radiusY * Math.sin(angle) ];
+  const [xBase, yBase] = [radiusX * Math.cos(angle), radiusY * Math.sin(angle)];
   
   const canvasCenterX = canvas.width / 2;
   const canvasCenterY = canvas.height / 2;
@@ -35,7 +64,6 @@ const calcPieceCoordinate = (canvas: HTMLCanvasElement, pieceWidth: number, piec
   const dh = 0.19; // コマの高さ
 
   const { x: xBase, y: yBase } = calcPosCenter(canvas, piece.posIndex);
-  // liftOffsetを適用（pieceWidthに対する倍率）
   const liftYOffset = liftOffset * pieceWidth;
   return { 
     x: xBase, 
@@ -58,15 +86,212 @@ const calcPosRect = (canvas: HTMLCanvasElement, pieceWidth: number, posIndex: nu
   }
 };
 
+// 画像読み込み用のカスタムフック
+const useImageLoader = () => {
+  const [images, setImages] = useState<Images>({
+    pieceWhite: null,
+    pieceBlack: null,
+    board: null,
+    pieceFrame: null,
+    cellFrame: null,
+    secondBest: null,
+  });
 
-const Board: React.FC = () => {
-  const canvasWidth = 350;
-  const canvasHeight = 350;
-  const pieceWidth = 50;
-  const cellWidth = 70; // マスの幅を定義
-  const pieceLifeOffsetRatio = 0.2; // コマを持ち上げる高さ（pieceWidthに対する倍率）
+  useEffect(() => {
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
+    const loadAllImages = async () => {
+      try {
+        const [
+          pieceWhite,
+          pieceBlack,
+          board,
+          pieceFrame,
+          cellFrame,
+          secondBest
+        ] = await Promise.all([
+          loadImage(IMAGE_PATHS.pieceWhite),
+          loadImage(IMAGE_PATHS.pieceBlack),
+          loadImage(IMAGE_PATHS.board),
+          loadImage(IMAGE_PATHS.pieceFrame),
+          loadImage(IMAGE_PATHS.cellFrame),
+          loadImage(IMAGE_PATHS.secondBest),
+        ]);
+        
+        setImages({
+          pieceWhite,
+          pieceBlack,
+          board,
+          pieceFrame,
+          cellFrame,
+          secondBest,
+        });
+      } catch (error) {
+        console.error('Failed to load images:', error);
+      }
+    };
+
+    loadAllImages();
+  }, []);
+
+  return images;
+};
+
+// 描画関数群
+const drawBackground = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, boardImage: HTMLImageElement) => {
+  const { width: drawWidth, height: drawHeight } = adjustSize(
+    boardImage.width,
+    boardImage.height,
+    canvas.width
+  );
   
+  const offsetX = (canvas.width - drawWidth) / 2;
+  const offsetY = (canvas.height - drawHeight) / 2;
+  
+  ctx.drawImage(boardImage, offsetX, offsetY, drawWidth, drawHeight);
+};
+
+const drawHighlightedCells = (
+  ctx: CanvasRenderingContext2D, 
+  canvas: HTMLCanvasElement, 
+  highlightedCells: number[], 
+  cellFrameImage: HTMLImageElement,
+  cellWidth: number
+) => {
+  highlightedCells.forEach(posIndex => {
+    const { x, y } = calcPosCenter(canvas, posIndex);
+    const { width: drawCellWidth, height: drawCellHeight } = adjustSize(
+      cellFrameImage.width,
+      cellFrameImage.height,
+      cellWidth
+    );
+    
+    ctx.drawImage(
+      cellFrameImage,
+      x - drawCellWidth / 2,
+      y - drawCellHeight / 2,
+      drawCellWidth,
+      drawCellHeight
+    );
+  });
+};
+
+const drawPieces = (
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  pieces: Piece[],
+  images: Images,
+  liftedPieces: number[],
+  pieceWidth: number,
+  pieceLifeOffsetRatio: number
+) => {
+  const posMaxHeightMap = new Map<number, number>();
+  
+  // 各位置における最大のheightIndexを計算
+  pieces.forEach(piece => {
+    const currentMax = posMaxHeightMap.get(piece.posIndex) || -1;
+    if (piece.heightIndex > currentMax) {
+      posMaxHeightMap.set(piece.posIndex, piece.heightIndex);
+    }
+  });
+
+  // 配置された駒を描画
+  pieces.forEach(piece => {
+    const isTopPiece = piece.heightIndex === posMaxHeightMap.get(piece.posIndex);
+    const liftOffset = isTopPiece && liftedPieces.includes(piece.posIndex) ? pieceLifeOffsetRatio : 0;
+    
+    const { x, y } = calcPieceCoordinate(canvas, pieceWidth, piece, liftOffset);
+    const pieceImage = piece.color === 'W' ? images.pieceWhite : images.pieceBlack;
+    
+    if (pieceImage) {
+      const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
+        pieceImage.width,
+        pieceImage.height,
+        pieceWidth
+      );
+      
+      ctx.drawImage(
+        pieceImage,
+        x - drawPieceWidth / 2,
+        y - drawPieceHeight / 2,
+        drawPieceWidth,
+        drawPieceHeight
+      );
+    }
+  });
+
+  return posMaxHeightMap;
+};
+
+const drawPieceFrames = (
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  highlightedPieces: number[],
+  posMaxHeightMap: Map<number, number>,
+  liftedPieces: number[],
+  pieceFrameImage: HTMLImageElement,
+  pieceWidth: number,
+  pieceLifeOffsetRatio: number
+) => {
+  highlightedPieces.forEach(posIndex => {
+    const maxHeight = posMaxHeightMap.get(posIndex);
+    if (maxHeight !== undefined) {
+      const topPiece: Piece = { posIndex, heightIndex: maxHeight, color: 'W' };
+      const liftOffset = liftedPieces.includes(posIndex) ? pieceLifeOffsetRatio : 0;
+      const { x, y } = calcPieceCoordinate(canvas, pieceWidth, topPiece, liftOffset);
+      
+      const { width: drawFrameWidth, height: drawFrameHeight } = adjustSize(
+        pieceFrameImage.width,
+        pieceFrameImage.height,
+        pieceWidth
+      );
+      
+      ctx.drawImage(
+        pieceFrameImage,
+        x - drawFrameWidth / 2,
+        y - drawFrameHeight / 2,
+        drawFrameWidth,
+        drawFrameHeight
+      );
+    }
+  });
+};
+
+const drawSecondBest = (
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  secondBestImage: HTMLImageElement
+) => {
+  const { width: drawSecondBestWidth, height: drawSecondBestHeight } = adjustSize(
+    secondBestImage.width,
+    secondBestImage.height,
+    canvas.width
+  );
+  
+  const secondBestOffsetX = (canvas.width - drawSecondBestWidth) / 2;
+  const secondBestOffsetY = (canvas.height - drawSecondBestHeight) / 2;
+  
+  ctx.drawImage(
+    secondBestImage,
+    secondBestOffsetX,
+    secondBestOffsetY,
+    drawSecondBestWidth,
+    drawSecondBestHeight
+  );
+};
+
+// メインコンポーネント
+const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const images = useImageLoader();
+  
   const [pieces, setPieces] = useState<Piece[]>(() => {
     // 初期状態で各マスに3つずつコマを配置
     const initialPieces: Piece[] = [];
@@ -83,190 +308,42 @@ const Board: React.FC = () => {
     }
     return initialPieces;
   });
-  const [highlightedCells, setHighlightedCells] = useState<number[]>([]); // 赤いマスを表示する位置
-  const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]); // ハイライトするコマの位置
-  const [liftedPieces, setLiftedPieces] = useState<number[]>([]); // 持ち上げるコマの位置のposIndex
+  
+  const [highlightedCells, setHighlightedCells] = useState<number[]>([]);
+  const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]);
+  const [liftedPieces, setLiftedPieces] = useState<number[]>([]);
   const [clickCount, setClickCount] = useState<number>(0);
-  const [showSecondBest, setShowSecondBest] = useState<boolean>(false); // secondbest.svgの表示・非表示を管理
-  const [pieceImageWhite, setPieceImageWhite] = useState<HTMLImageElement | null>(null);
-  const [pieceImageBlack, setPieceImageBlack] = useState<HTMLImageElement | null>(null);
-  const [boardImage, setBoardImage] = useState<HTMLImageElement | null>(null);
-  const [pieceFrameImage, setPieceFrameImage] = useState<HTMLImageElement | null>(null);
-  const [cellFrameImage, setCellFrameImage] = useState<HTMLImageElement | null>(null);
-  const [secondBestImage, setSecondBestImage] = useState<HTMLImageElement | null>(null);
+  const [showSecondBest, setShowSecondBest] = useState<boolean>(false);
 
-  useEffect(() => {
-    // 白コマの画像を読み込む
-    const pieceImgWhite = new Image();
-    pieceImgWhite.onload = () => {
-      setPieceImageWhite(pieceImgWhite);
-    };
-    pieceImgWhite.src = '/src/assets/piece_white.svg';
-
-    // 黒コマの画像を読み込む
-    const pieceImgBlack = new Image();
-    pieceImgBlack.onload = () => {
-      setPieceImageBlack(pieceImgBlack);
-    };
-    pieceImgBlack.src = '/src/assets/piece_black.svg';
-
-    // ボードの背景画像を読み込む
-    const boardImg = new Image();
-    boardImg.onload = () => {
-      setBoardImage(boardImg);
-    };
-    boardImg.src = '/src/assets/board.svg';
-    
-    // コマのフレーム画像を読み込む
-    const pieceFrameImg = new Image();
-    pieceFrameImg.onload = () => {
-      setPieceFrameImage(pieceFrameImg);
-    };
-    pieceFrameImg.src = '/src/assets/piece_frame.svg';
-    
-    // セルのフレーム画像を読み込む
-    const cellFrameImg = new Image();
-    cellFrameImg.onload = () => {
-      setCellFrameImage(cellFrameImg);
-    };
-    cellFrameImg.src = '/src/assets/cell_frame.svg';
-
-    // secondbest.svgを読み込む
-    const secondBestImg = new Image();
-    secondBestImg.onload = () => {
-      setSecondBestImage(secondBestImg);
-    };
-    secondBestImg.src = '/src/assets/secondbest.svg';
-  }, []);
-
+  // 描画処理を統合したuseEffect
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && pieceImageWhite && pieceImageBlack && boardImage && cellFrameImage && pieceFrameImage && secondBestImage) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // キャンバスをクリア
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // ボードの背景画像を縦横比を保持して描画
-        const { width: drawWidth, height: drawHeight } = adjustSize(
-          boardImage.width,
-          boardImage.height,
-          canvas.width
-        );
-        
-        // キャンバスの中央に配置するためのオフセットを計算
-        const offsetX = (canvas.width - drawWidth) / 2;
-        const offsetY = (canvas.height - drawHeight) / 2;
-        
-        ctx.drawImage(boardImage, offsetX, offsetY, drawWidth, drawHeight);
-
-        // ハイライトされたセルを描画
-        highlightedCells.forEach(posIndex => {
-          const { x, y } = calcPosCenter(canvas, posIndex);
-          const { width: drawCellWidth, height: drawCellHeight } = adjustSize(
-            cellFrameImage.width,
-            cellFrameImage.height,
-            cellWidth
-          );
-          
-          ctx.drawImage(
-            cellFrameImage,
-            x - drawCellWidth / 2,
-            y - drawCellHeight / 2,
-            drawCellWidth,
-            drawCellHeight
-          );
-        });
-
-        // 各posIndexごとに最も高いheightIndexを持つコマの位置を計算
-        const posMaxHeightMap = new Map<number, number>();
-        
-        // 各位置における最大のheightIndexを計算
-        pieces.forEach(piece => {
-          const currentMax = posMaxHeightMap.get(piece.posIndex) || -1;
-          if (piece.heightIndex > currentMax) {
-            posMaxHeightMap.set(piece.posIndex, piece.heightIndex);
-          }
-        });
-
-        // 配置された駒を描画
-        pieces.forEach(piece => {
-          // 最上部のコマかどうかを判断
-          const isTopPiece = piece.heightIndex === posMaxHeightMap.get(piece.posIndex);
-          // 持ち上げるべきコマかどうかを判断し、必要ならオフセットを適用
-          const liftOffset = isTopPiece && liftedPieces.includes(piece.posIndex) ? pieceLifeOffsetRatio : 0;
-          
-          // 駒の座標を計算
-          const { x, y } = calcPieceCoordinate(canvas, pieceWidth, piece, liftOffset);
-          
-          // 色に応じて適切な画像を選択
-          const pieceImage = piece.color === 'W' ? pieceImageWhite : pieceImageBlack;
-          
-          // adjustSize関数を使って駒のサイズを調整
-          const { width: drawPieceWidth, height: drawPieceHeight } = adjustSize(
-            pieceImage.width,
-            pieceImage.height,
-            pieceWidth
-          );
-          
-          ctx.drawImage(
-            pieceImage,
-            x - drawPieceWidth / 2,
-            y - drawPieceHeight / 2,
-            drawPieceWidth,
-            drawPieceHeight
-          );
-        });
-        
-        // ハイライトされたposIndexの位置だけフレームを描画
-        highlightedPieces.forEach(posIndex => {
-          const maxHeight = posMaxHeightMap.get(posIndex);
-          // その位置にコマがある場合のみフレームを描画
-          if (maxHeight !== undefined) {
-            const topPiece: Piece = { posIndex, heightIndex: maxHeight, color: 'W' }; // 色は描画に影響しないのでどちらでも良い
-            // 持ち上げるべきコマかどうかを判断し、必要ならオフセットを適用
-            const liftOffset = liftedPieces.includes(posIndex) ? pieceLifeOffsetRatio : 0;
-            const { x, y } = calcPieceCoordinate(canvas, pieceWidth, topPiece, liftOffset);
-            
-            const { width: drawFrameWidth, height: drawFrameHeight } = adjustSize(
-              pieceFrameImage.width,
-              pieceFrameImage.height,
-              pieceWidth
-            );
-            
-            ctx.drawImage(
-              pieceFrameImage,
-              x - drawFrameWidth / 2,
-              y - drawFrameHeight / 2,
-              drawFrameWidth,
-              drawFrameHeight
-            );
-          }
-        });
-
-        // secondbest.svgを表示する場合
-        if (showSecondBest) {
-          const { width: drawSecondBestWidth, height: drawSecondBestHeight } = adjustSize(
-            secondBestImage.width,
-            secondBestImage.height,
-            canvas.width
-          );
-          
-          // キャンバスの中央に配置するためのオフセットを計算
-          const secondBestOffsetX = (canvas.width - drawSecondBestWidth) / 2;
-          const secondBestOffsetY = (canvas.height - drawSecondBestHeight) / 2;
-          
-          ctx.drawImage(
-            secondBestImage,
-            secondBestOffsetX,
-            secondBestOffsetY,
-            drawSecondBestWidth,
-            drawSecondBestHeight
-          );
-        }
-      }
+    if (!canvas || !Object.values(images).every(img => img)) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // キャンバスをクリア
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 各描画処理を順次実行
+    drawBackground(ctx, canvas, images.board!);
+    drawHighlightedCells(ctx, canvas, highlightedCells, images.cellFrame!, BOARD_CONSTANTS.CELL_WIDTH);
+    
+    const posMaxHeightMap = drawPieces(
+      ctx, canvas, pieces, images, liftedPieces, 
+      BOARD_CONSTANTS.PIECE_WIDTH, BOARD_CONSTANTS.PIECE_LIFT_OFFSET_RATIO
+    );
+    
+    drawPieceFrames(
+      ctx, canvas, highlightedPieces, posMaxHeightMap, liftedPieces,
+      images.pieceFrame!, BOARD_CONSTANTS.PIECE_WIDTH, BOARD_CONSTANTS.PIECE_LIFT_OFFSET_RATIO
+    );
+    
+    if (showSecondBest) {
+      drawSecondBest(ctx, canvas, images.secondBest!);
     }
-  }, [pieces, pieceImageWhite, pieceImageBlack, boardImage, cellFrameImage, pieceFrameImage, secondBestImage, highlightedCells, highlightedPieces, liftedPieces, showSecondBest]);
+  }, [pieces, images, highlightedCells, highlightedPieces, liftedPieces, showSecondBest]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -278,7 +355,7 @@ const Board: React.FC = () => {
       
       // どのposIndexの領域内がクリックされたかを判定
       const clickedPosIndex = Array.from({ length: 8 }).findIndex((_, posIndex) => {
-        const { x, y, width, height } = calcPosRect(canvas, pieceWidth, posIndex);
+        const { x, y, width, height } = calcPosRect(canvas, BOARD_CONSTANTS.PIECE_WIDTH, posIndex);
         return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
       });
 
@@ -306,8 +383,8 @@ const Board: React.FC = () => {
       <canvas 
         ref={canvasRef}
         className="board-canvas"
-        width={canvasWidth}
-        height={canvasHeight}
+        width={BOARD_CONSTANTS.CANVAS_WIDTH}
+        height={BOARD_CONSTANTS.CANVAS_HEIGHT}
         onClick={handleCanvasClick}
       />
     </div>
