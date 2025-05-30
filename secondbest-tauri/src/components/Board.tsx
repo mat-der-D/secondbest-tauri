@@ -67,7 +67,22 @@ const Board: React.FC = () => {
   const pieceLifeOffsetRatio = 0.3; // コマを持ち上げる高さ（pieceWidthに対する倍率）
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [pieces, setPieces] = useState<Piece[]>(() => {
+    // 初期状態で各マスに3つずつコマを配置
+    const initialPieces: Piece[] = [];
+    for (let posIndex = 0; posIndex < 8; posIndex++) {
+      // 偶数のマスには白黒白、奇数のマスには黒白黒を配置
+      const colors: ('B' | 'W')[] = posIndex % 2 === 0 ? ['W', 'B', 'W'] : ['B', 'W', 'B'];
+      for (let heightIndex = 0; heightIndex < 3; heightIndex++) {
+        initialPieces.push({
+          posIndex,
+          heightIndex,
+          color: colors[heightIndex]
+        });
+      }
+    }
+    return initialPieces;
+  });
   const [highlightedCells, setHighlightedCells] = useState<number[]>([]); // 赤いマスを表示する位置
   const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]); // ハイライトするコマの位置
   const [liftedPieces, setLiftedPieces] = useState<number[]>([]); // 持ち上げるコマの位置のposIndex
@@ -240,18 +255,7 @@ const Board: React.FC = () => {
       // クリックされた位置が領域内にない場合は何もしない
       if (clickedPosIndex === -1) return;
       
-      // その位置に既に配置されているコマの数を数える
-      const existingPiecesAtPos = pieces.filter(piece => piece.posIndex === clickedPosIndex);
-      const heightIndex = existingPiecesAtPos.length;
-      
-      // クリック回数の偶奇に応じて色を決定（偶数: 白、奇数: 黒）
-      const color: 'B' | 'W' = clickCount % 2 === 0 ? 'W' : 'B';
-
-      // 新しい駒を追加
-      setPieces(prevPieces => [...prevPieces, { posIndex: clickedPosIndex, heightIndex, color }]);
-      setClickCount(prevClick => prevClick + 1);
-      
-      // 動作確認のため、クリックしたposIndexをliftedPiecesに追加または削除する
+      // マスのリフト状態を切り替える
       setLiftedPieces(prevLiftedPieces => {
         if (prevLiftedPieces.includes(clickedPosIndex)) {
           // すでに含まれている場合は削除
@@ -259,15 +263,6 @@ const Board: React.FC = () => {
         } else {
           // 含まれていない場合は追加
           return [...prevLiftedPieces, clickedPosIndex];
-        }
-      });
-      
-      // また、動作確認のためにハイライトも切り替える
-      setHighlightedPieces(prevHighlightedPieces => {
-        if (prevHighlightedPieces.includes(clickedPosIndex)) {
-          return prevHighlightedPieces.filter(index => index !== clickedPosIndex);
-        } else {
-          return [...prevHighlightedPieces, clickedPosIndex];
         }
       });
     }
