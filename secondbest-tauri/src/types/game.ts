@@ -35,7 +35,7 @@ export interface GameState {
 }
 
 export type MoveAction = 
-  | { Place: { position: Position } }
+  | { Place: { position: Position; player: Player } }
   | { Move: { from: Position; to: Position } };
 
 export enum GameOverReason {

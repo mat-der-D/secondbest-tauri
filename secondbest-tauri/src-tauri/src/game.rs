@@ -42,7 +42,7 @@ pub struct GameState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MoveAction {
-    Place { position: Position },
+    Place { position: Position, player: Player },
     Move { from: Position, to: Position },
 }
 

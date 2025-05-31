@@ -58,8 +58,9 @@ impl From<Position> for sblib::Position {
 impl From<sblib::Action> for MoveAction {
     fn from(value: sblib::Action) -> Self {
         match value {
-            sblib::Action::Put(position, _) => MoveAction::Place {
+            sblib::Action::Put(position, player) => MoveAction::Place {
                 position: position.into(),
+                player: player.into(),
             },
             sblib::Action::Move(from, to) => MoveAction::Move {
                 from: from.into(),
@@ -69,17 +70,11 @@ impl From<sblib::Action> for MoveAction {
     }
 }
 
-// TODO: MoveAction の Place で Player を持つようにする
-struct PlayerAction {
-    player: Player,
-    move_action: MoveAction,
-}
-
-impl From<PlayerAction> for sblib::Action {
-    fn from(value: PlayerAction) -> Self {
-        match value.move_action {
-            MoveAction::Place { position } => {
-                sblib::Action::Put(position.into(), value.player.into())
+impl From<MoveAction> for sblib::Action {
+    fn from(value: MoveAction) -> Self {
+        match value {
+            MoveAction::Place { position, player } => {
+                sblib::Action::Put(position.into(), player.into())
             }
             MoveAction::Move { from, to } => sblib::Action::Move(from.into(), to.into()),
         }
@@ -143,11 +138,7 @@ impl GameEngine {
         app_handle: &AppHandle,
     ) -> Result<GameState, String> {
         let mut game = self.state.lock().unwrap();
-        let player_action = PlayerAction {
-            player: game.current_player().into(),
-            move_action: action,
-        };
-        let Ok(_) = game.apply_action(player_action.into()) else {
+        let Ok(_) = game.apply_action(action.into()) else {
             return Err("この手は実行できません。".to_string());
         };
 
