@@ -192,7 +192,7 @@ impl GameEngine {
 
         std::thread::spawn(move || {
             let mut game = state.lock().unwrap();
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_secs(1));
 
             if game.can_declare_second_best() {
                 game.declare_second_best().unwrap();
@@ -216,7 +216,7 @@ impl GameEngine {
         std::thread::spawn(move || {
             let mut game = state.lock().unwrap();
 
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_secs(1));
 
             if game.can_declare_second_best() {
                 panic!(); // ここに来るのは一回目だけのはず
