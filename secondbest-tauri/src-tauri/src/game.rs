@@ -24,12 +24,6 @@ pub struct PieceStack {
     pub pieces: Vec<Player>, // 最大3個まで、先頭が一番下
 }
 
-impl PieceStack {
-    pub fn new() -> Self {
-        Self { pieces: Vec::new() }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TurnPhase {
     WaitingForMove,       // 通常の手番待ち
@@ -44,18 +38,6 @@ pub struct GameState {
     pub turn_phase: TurnPhase,
     pub second_best_available: bool,
     pub winner: Option<Player>,
-}
-
-impl GameState {
-    pub fn new() -> Self {
-        Self {
-            board: HashMap::new(),
-            current_player: Player::Black,
-            turn_phase: TurnPhase::WaitingForMove,
-            second_best_available: false,
-            winner: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

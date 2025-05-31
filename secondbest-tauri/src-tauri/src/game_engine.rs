@@ -1,44 +1,140 @@
 use crate::game::*;
-use std::sync::{Arc, Mutex};
+use secondbest::prelude as sblib;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 use tauri::{AppHandle, Emitter};
 
+// 各種変換関数
+impl From<sblib::Color> for Player {
+    fn from(value: sblib::Color) -> Self {
+        match value {
+            sblib::Color::B => Player::Black,
+            sblib::Color::W => Player::White,
+        }
+    }
+}
+
+impl From<Player> for sblib::Color {
+    fn from(value: Player) -> Self {
+        match value {
+            Player::Black => sblib::Color::B,
+            Player::White => sblib::Color::W,
+        }
+    }
+}
+
+impl From<sblib::Position> for Position {
+    fn from(value: sblib::Position) -> Self {
+        match value {
+            sblib::Position::N => Position::N,
+            sblib::Position::NE => Position::NE,
+            sblib::Position::E => Position::E,
+            sblib::Position::SE => Position::SE,
+            sblib::Position::S => Position::S,
+            sblib::Position::SW => Position::SW,
+            sblib::Position::W => Position::W,
+            sblib::Position::NW => Position::NW,
+        }
+    }
+}
+
+impl From<Position> for sblib::Position {
+    fn from(value: Position) -> Self {
+        match value {
+            Position::N => sblib::Position::N,
+            Position::NE => sblib::Position::NE,
+            Position::E => sblib::Position::E,
+            Position::SE => sblib::Position::SE,
+            Position::S => sblib::Position::S,
+            Position::SW => sblib::Position::SW,
+            Position::W => sblib::Position::W,
+            Position::NW => sblib::Position::NW,
+        }
+    }
+}
+
+impl From<sblib::Action> for MoveAction {
+    fn from(value: sblib::Action) -> Self {
+        match value {
+            sblib::Action::Put(position, _) => MoveAction::Place {
+                position: position.into(),
+            },
+            sblib::Action::Move(from, to) => MoveAction::Move {
+                from: from.into(),
+                to: to.into(),
+            },
+        }
+    }
+}
+
+// TODO: MoveAction の Place で Player を持つようにする
+struct PlayerAction {
+    player: Player,
+    move_action: MoveAction,
+}
+
+impl From<PlayerAction> for sblib::Action {
+    fn from(value: PlayerAction) -> Self {
+        match value.move_action {
+            MoveAction::Place { position } => {
+                sblib::Action::Put(position.into(), value.player.into())
+            }
+            MoveAction::Move { from, to } => sblib::Action::Move(from.into(), to.into()),
+        }
+    }
+}
+
+fn create_board(board: &sblib::Board) -> HashMap<Position, PieceStack> {
+    let mut board_map = HashMap::new();
+    for pos in sblib::Position::iter() {
+        let pieces = board.get_pieces_at(pos);
+        let piece_stack = PieceStack {
+            pieces: pieces.into_iter().map(|c| c.into()).collect(),
+        };
+        board_map.insert(pos.into(), piece_stack);
+    }
+    board_map
+}
+
+fn create_game_state(game: &sblib::Game) -> GameState {
+    GameState {
+        board: create_board(game.board()),
+        current_player: game.current_player().into(),
+        turn_phase: TurnPhase::WaitingForMove, // TODO: 適切に設定する
+        second_best_available: game.can_declare_second_best(),
+        winner: game.result().winner().map(|c| c.into()),
+    }
+}
+
+// GameEngine の実装
 pub struct GameEngine {
-    state: Arc<Mutex<GameState>>,
+    state: Arc<Mutex<sblib::Game>>,
 }
 
 impl GameEngine {
     pub fn new() -> Self {
         Self {
-            state: Arc::new(Mutex::new(GameState::new())),
+            state: Arc::new(Mutex::new(sblib::Game::new())),
         }
     }
 
     pub fn new_game(&self) -> GameState {
-        let mut state = self.state.lock().unwrap();
-        *state = GameState::new();
-        state.clone()
+        let mut game = self.state.lock().unwrap();
+        *game = sblib::Game::new();
+        create_game_state(&game)
+        // TODO: プレイヤーが白の場合はAIの手が続く
     }
 
     pub fn get_game_state(&self) -> GameState {
-        self.state.lock().unwrap().clone()
+        let game = self.state.lock().unwrap();
+        create_game_state(&game)
     }
 
     pub fn get_legal_moves(&self) -> Vec<MoveAction> {
-        // ダミー実装：固定の合法手を返す
-        vec![
-            MoveAction::Place {
-                position: Position::N,
-            },
-            MoveAction::Place {
-                position: Position::E,
-            },
-            MoveAction::Place {
-                position: Position::S,
-            },
-            MoveAction::Place {
-                position: Position::W,
-            },
-        ]
+        let game = self.state.lock().unwrap();
+        game.legal_actions().iter().map(|&a| a.into()).collect()
     }
 
     pub fn make_move(
@@ -46,164 +142,129 @@ impl GameEngine {
         action: MoveAction,
         app_handle: &AppHandle,
     ) -> Result<GameState, String> {
-        let mut state = self.state.lock().unwrap();
-
-        // ダミー実装：とりあえず手を受け入れて状態を更新
-        match action {
-            MoveAction::Place { position } => {
-                let mut stack = PieceStack::new();
-                stack.pieces.push(state.current_player);
-                state.board.insert(position, stack);
-            }
-            MoveAction::Move { from: _, to } => {
-                let mut stack = PieceStack::new();
-                stack.pieces.push(state.current_player);
-                state.board.insert(to, stack);
-            }
-        }
-
-        // プレイヤーを切り替え
-        state.current_player = match state.current_player {
-            Player::Black => Player::White,
-            Player::White => Player::Black,
+        let mut game = self.state.lock().unwrap();
+        let player_action = PlayerAction {
+            player: game.current_player().into(),
+            move_action: action,
+        };
+        let Ok(_) = game.apply_action(player_action.into()) else {
+            return Err("この手は実行できません。".to_string());
         };
 
-        let new_state = state.clone();
-        drop(state);
-
-        // AIの手をシミュレート（非同期で実行）
-        self.simulate_ai_move(app_handle, new_state.clone());
+        let new_state = create_game_state(&game);
+        if game.is_in_progress() {
+            self.simulate_ai_move(app_handle); // 非同期に実行
+        }
 
         Ok(new_state)
     }
 
     pub fn declare_second_best(&self, app_handle: &AppHandle) -> Result<GameState, String> {
-        let mut state = self.state.lock().unwrap();
-
-        if !state.second_best_available {
+        let mut game = self.state.lock().unwrap();
+        if !game.can_declare_second_best() {
             return Err("Second Best宣言は現在利用できません".to_string());
         }
+        game.declare_second_best().unwrap();
 
-        state.turn_phase = TurnPhase::WaitingForSecondMove;
-        state.second_best_available = false;
-
-        let new_state = state.clone();
-        drop(state);
-
-        // AIに代替手を要求
-        self.simulate_ai_second_move(app_handle, new_state.clone());
+        let new_state = create_game_state(&game);
+        if game.is_in_progress() {
+            self.simulate_ai_second_move(app_handle); // 非同期に実行
+        }
 
         Ok(new_state)
     }
 
     pub fn check_winner(&self) -> Option<Player> {
-        // ダミー実装：勝者なし
-        None
+        let game = self.state.lock().unwrap();
+        game.result().winner().map(|p| p.into())
     }
 
     pub fn get_position_stack(&self, position: Position) -> PieceStack {
-        let state = self.state.lock().unwrap();
-        state
-            .board
-            .get(&position)
-            .cloned()
-            .unwrap_or_else(PieceStack::new)
+        let game = self.state.lock().unwrap();
+        let pieces = game
+            .board()
+            .get_pieces_at(position.into())
+            .into_iter()
+            .map(|c| c.into())
+            .collect();
+        PieceStack { pieces }
     }
 
     pub fn can_declare_second_best(&self) -> bool {
-        let state = self.state.lock().unwrap();
-        state.second_best_available && state.turn_phase == TurnPhase::WaitingForSecondBest
+        let game = self.state.lock().unwrap();
+        game.can_declare_second_best()
     }
 
-    // ダミーAI実装
-    fn simulate_ai_move(&self, app_handle: &AppHandle, _current_state: GameState) {
+    fn simulate_ai_move(&self, app_handle: &AppHandle) {
         let app_handle = app_handle.clone();
-        let state_arc = self.state.clone();
+        let state = self.state.clone();
 
-        // 非同期でAIの動作をシミュレート
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(1000)); // AIの思考時間
+            let mut game = state.lock().unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(10));
 
-            // ダミーのAI手を生成
-            let ai_action = MoveAction::Place {
-                position: Position::NE,
-            };
-
-            // 状態を更新
-            let current_state = {
-                let mut state = state_arc.lock().unwrap();
-                let mut stack = PieceStack::new();
-                stack.pieces.push(state.current_player);
-                state.board.insert(Position::NE, stack);
-
-                state.current_player = match state.current_player {
-                    Player::Black => Player::White,
-                    Player::White => Player::Black,
-                };
-                state.second_best_available = true;
-                state.turn_phase = TurnPhase::WaitingForSecondBest;
-                state.clone()
-            };
-
-            // イベントを発火
-            let _ = app_handle.emit(
-                "ai_move_completed",
-                AiMoveEvent {
-                    action: ai_action,
-                    new_state: current_state,
-                },
-            );
+            if game.can_declare_second_best() {
+                game.declare_second_best().unwrap();
+                Self::emit_ai_second_best_declared(&app_handle, &game);
+                return;
+            }
+            let legal_actions = game.legal_actions();
+            if legal_actions.is_empty() {
+                return;
+            }
+            let ai_action = legal_actions[0];
+            game.apply_action(ai_action).unwrap();
+            Self::emit_ai_move_completed(&app_handle, ai_action, &game);
         });
     }
 
-    fn simulate_ai_second_move(&self, app_handle: &AppHandle, _current_state: GameState) {
+    fn simulate_ai_second_move(&self, app_handle: &AppHandle) {
         let app_handle = app_handle.clone();
-        let state_arc = self.state.clone();
+        let state = self.state.clone();
 
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(1000));
+            let mut game = state.lock().unwrap();
 
-            let ai_action = MoveAction::Place {
-                position: Position::SW,
-            };
+            std::thread::sleep(std::time::Duration::from_secs(10));
 
-            let current_state = {
-                let mut state = state_arc.lock().unwrap();
-                let mut stack = PieceStack::new();
-                stack.pieces.push(state.current_player);
-                state.board.insert(Position::SW, stack);
-
-                state.current_player = match state.current_player {
-                    Player::Black => Player::White,
-                    Player::White => Player::Black,
-                };
-                state.turn_phase = TurnPhase::WaitingForMove;
-                state.clone()
-            };
-
-            let _ = app_handle.emit(
-                "ai_second_move_completed",
-                AiSecondMoveEvent {
-                    action: ai_action,
-                    new_state: current_state,
-                },
-            );
+            if game.can_declare_second_best() {
+                panic!(); // ここに来るのは一回目だけのはず
+            }
+            let legal_actions = game.legal_actions();
+            if legal_actions.is_empty() {
+                return; // ゲーム終了しているはず
+            }
+            let ai_action = legal_actions[0];
+            game.apply_action(ai_action).unwrap();
+            Self::emit_second_move_completed(&app_handle, ai_action, &game);
         });
     }
 
-    #[allow(dead_code)]
-    pub fn ai_declare_second_best(&self, app_handle: &AppHandle) {
-        let state_arc = self.state.clone();
-        let app_handle = app_handle.clone();
+    fn emit_ai_move_completed(
+        app_handle: &AppHandle,
+        ai_action: sblib::Action,
+        game: &sblib::Game,
+    ) {
+        let action = ai_action.into();
+        let new_state = create_game_state(game);
+        let _ = app_handle.emit("ai_move_completed", AiMoveEvent { action, new_state });
+    }
 
-        std::thread::spawn(move || {
-            let new_state = {
-                let mut state = state_arc.lock().unwrap();
-                state.turn_phase = TurnPhase::WaitingForSecondMove;
-                state.clone()
-            };
+    fn emit_ai_second_best_declared(app_handle: &AppHandle, game: &sblib::Game) {
+        let new_state = create_game_state(game);
+        let _ = app_handle.emit("ai_second_best_declared", AiSecondBestEvent { new_state });
+    }
 
-            let _ = app_handle.emit("ai_second_best_declared", AiSecondBestEvent { new_state });
-        });
+    fn emit_second_move_completed(
+        app_handle: &AppHandle,
+        ai_action: sblib::Action,
+        game: &sblib::Game,
+    ) {
+        let action = ai_action.into();
+        let new_state = create_game_state(game);
+        let _ = app_handle.emit(
+            "ai_second_move_completed",
+            AiSecondMoveEvent { action, new_state },
+        );
     }
 }
