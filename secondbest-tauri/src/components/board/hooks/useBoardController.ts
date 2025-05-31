@@ -30,83 +30,53 @@ export const useBoardController = () => {
   const highlightMovementDestinations = (fromPosition: any) => 
     uiState.highlightMovementDestinations(fromPosition, errorHandling.showErrorMessage);
   
-  const enableNormalMoveUI = () => 
-    userInteraction.enableNormalMoveUI(gameCore.setTurnPhase);
-  
-  const disableUserInteraction = () => 
-    userInteraction.disableUserInteraction(uiState.clearAllHighlights);
-  
-  const promptForAlternativeMove = () => 
-    userInteraction.promptForAlternativeMove(uiState.clearAllHighlights);
-  
   const revertToLastValidState = async () => {
     await gameCore.revertToLastValidState();
     uiState.clearAllHighlights();
   };
 
-  // 統合されたゲーム状態オブジェクト
-  const gameState = {
-    // ゲーム基本状態
-    ...gameCore,
-    
-    // UI表示状態
-    ...uiState,
-    
-    // ユーザー操作状態
-    ...userInteraction,
-    
-    // エラー処理
-    ...errorHandling,
-    
-    // ゲームフロー制御
-    ...gameFlow,
-    
-    // 統合された関数
-    highlightMovementDestinations,
-    enableNormalMoveUI,
-    disableUserInteraction,
-    promptForAlternativeMove,
-    revertToLastValidState,
-    
-    // エイリアス（後方互換性のため）
-    initializeGame: gameFlow.initializeGameWithErrorHandling,
-    showSecondBestOption: userInteraction.showSecondBestOption,
-  };
-
   // ゲームイベント処理（必要最小限の依存関係のみ渡す）
   useGameEvents({
-    updateBoardFromGameState: gameState.updateBoardFromGameState,
-    setShowSecondBest: gameState.setShowSecondBest,
-    setTurnPhase: gameState.setTurnPhase,
-    setUserInteractionEnabled: gameState.setUserInteractionEnabled,
-    showErrorMessage: gameState.showErrorMessage,
-    initializePlayerTurn: gameState.initializePlayerTurn,
-    clearAllHighlights: gameState.clearAllHighlights,
-    revertToLastValidState: gameState.revertToLastValidState,
+    updateBoardFromGameState: gameCore.updateBoardFromGameState,
+    setShowSecondBest: uiState.setShowSecondBest,
+    setTurnPhase: gameCore.setTurnPhase,
+    setUserInteractionEnabled: userInteraction.setUserInteractionEnabled,
+    showErrorMessage: errorHandling.showErrorMessage,
+    initializePlayerTurn: gameFlow.initializePlayerTurn,
+    clearAllHighlights: uiState.clearAllHighlights,
+    revertToLastValidState,
   });
 
   // キャンバス操作処理（必要最小限の依存関係のみ渡す）
   const canvasInteraction = useCanvasInteraction({
-    userInteractionEnabled: gameState.userInteractionEnabled,
-    gameState: gameState.gameState,
-    selectedPiecePosition: gameState.selectedPiecePosition,
-    highlightedCells: gameState.highlightedCells,
-    highlightedPieces: gameState.highlightedPieces,
-    currentPlayer: gameState.currentPlayer,
-    updateBoardFromGameState: gameState.updateBoardFromGameState,
-    showErrorMessage: gameState.showErrorMessage,
-    setSelectedPiecePosition: gameState.setSelectedPiecePosition,
-    setLiftedPieces: gameState.setLiftedPieces,
-    setHighlightedPieces: gameState.setHighlightedPieces,
-    setUserInteractionEnabled: gameState.setUserInteractionEnabled,
-    clearAllHighlights: gameState.clearAllHighlights,
-    highlightMovementDestinations: gameState.highlightMovementDestinations,
+    userInteractionEnabled: userInteraction.userInteractionEnabled,
+    gameState: gameCore.gameState,
+    selectedPiecePosition: userInteraction.selectedPiecePosition,
+    highlightedCells: uiState.highlightedCells,
+    highlightedPieces: uiState.highlightedPieces,
+    currentPlayer: gameCore.currentPlayer,
+    updateBoardFromGameState: gameCore.updateBoardFromGameState,
+    showErrorMessage: errorHandling.showErrorMessage,
+    setSelectedPiecePosition: userInteraction.setSelectedPiecePosition,
+    setLiftedPieces: uiState.setLiftedPieces,
+    setHighlightedPieces: uiState.setHighlightedPieces,
+    setUserInteractionEnabled: userInteraction.setUserInteractionEnabled,
+    clearAllHighlights: uiState.clearAllHighlights,
+    highlightMovementDestinations,
   });
 
+  // Board.tsxで必要な値のみを返す
   return {
-    // ゲーム状態
-    ...gameState,
-    // キャンバス操作
-    ...canvasInteraction,
+    // 描画に必要な状態
+    pieces: gameCore.pieces,
+    highlightedCells: uiState.highlightedCells,
+    highlightedPieces: uiState.highlightedPieces,
+    liftedPieces: uiState.liftedPieces,
+    showSecondBest: uiState.showSecondBest,
+    errorMessage: errorHandling.errorMessage,
+    
+    // 操作に必要な関数
+    initializeGame: gameFlow.initializeGameWithErrorHandling,
+    handleCanvasClick: canvasInteraction.handleCanvasClick,
   };
 }; 
