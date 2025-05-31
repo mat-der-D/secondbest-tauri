@@ -24,24 +24,6 @@ export const useGameState = () => {
     initializeGame: gameCore.initializeGame,
   });
 
-  // 依存関係を持つ関数をラップ
-  const highlightMovementDestinations = (fromPosition: any) => 
-    uiState.highlightMovementDestinations(fromPosition, errorHandling.showErrorMessage);
-
-  const enableNormalMoveUI = () => 
-    userInteraction.enableNormalMoveUI(gameCore.setTurnPhase);
-
-  const disableUserInteraction = () => 
-    userInteraction.disableUserInteraction(uiState.clearAllHighlights);
-
-  const promptForAlternativeMove = () => 
-    userInteraction.promptForAlternativeMove(uiState.clearAllHighlights);
-
-  const revertToLastValidState = async () => {
-    await gameCore.revertToLastValidState();
-    uiState.clearAllHighlights();
-  };
-
   return {
     // ゲーム基本状態
     ...gameCore,
@@ -58,17 +40,26 @@ export const useGameState = () => {
     // ゲームフロー制御
     ...gameFlow,
     
-    // 統合された関数
-    highlightMovementDestinations,
-    enableNormalMoveUI,
-    disableUserInteraction,
-    promptForAlternativeMove,
-    revertToLastValidState,
+    // 統合された関数（依存関係を持つもの）
+    highlightMovementDestinations: (fromPosition: any) => 
+      uiState.highlightMovementDestinations(fromPosition, errorHandling.showErrorMessage),
+    
+    enableNormalMoveUI: () => 
+      userInteraction.enableNormalMoveUI(gameCore.setTurnPhase),
+    
+    disableUserInteraction: () => 
+      userInteraction.disableUserInteraction(uiState.clearAllHighlights),
+    
+    promptForAlternativeMove: () => 
+      userInteraction.promptForAlternativeMove(uiState.clearAllHighlights),
+    
+    revertToLastValidState: async () => {
+      await gameCore.revertToLastValidState();
+      uiState.clearAllHighlights();
+    },
     
     // エイリアス（後方互換性のため）
     initializeGame: gameFlow.initializeGameWithErrorHandling,
-    initializePlayerTurn: gameFlow.initializePlayerTurn,
-    highlightAlternativeMoves: gameFlow.highlightAlternativeMoves,
     showSecondBestOption: userInteraction.showSecondBestOption,
   };
 }; 

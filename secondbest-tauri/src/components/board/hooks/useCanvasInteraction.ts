@@ -4,26 +4,31 @@ import { MoveAction } from '../../../types/game';
 import { BOARD_CONSTANTS, indexToPosition } from '../constants';
 import { calcPosRect } from '../utils';
 
-interface GameStateHook {
+interface CanvasInteractionDependencies {
+  // 読み取り専用状態
   userInteractionEnabled: boolean;
   gameState: any;
   selectedPiecePosition: number | null;
   highlightedCells: number[];
   highlightedPieces: number[];
   currentPlayer: any;
+  
+  // 状態更新関数（最小限）
+  updateBoardFromGameState: (gameState: any) => void;
+  showErrorMessage: (message: string) => void;
+  
+  // UI状態更新関数
   setSelectedPiecePosition: (position: number | null) => void;
   setLiftedPieces: (pieces: number[]) => void;
   setHighlightedPieces: (pieces: number[]) => void;
-  updateBoardFromGameState: (gameState: any) => void;
-  clearAllHighlights: () => void;
   setUserInteractionEnabled: (enabled: boolean) => void;
+  clearAllHighlights: () => void;
+  
+  // 非同期操作
   highlightMovementDestinations: (position: any) => Promise<void>;
-  initializePlayerTurn: () => void;
-  showErrorMessage: (message: string) => void;
-  revertToLastValidState: () => void;
 }
 
-export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
+export const useCanvasInteraction = (deps: CanvasInteractionDependencies) => {
   const {
     userInteractionEnabled,
     gameState,
@@ -31,17 +36,69 @@ export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
     highlightedCells,
     highlightedPieces,
     currentPlayer,
+    updateBoardFromGameState,
+    showErrorMessage,
     setSelectedPiecePosition,
     setLiftedPieces,
     setHighlightedPieces,
-    updateBoardFromGameState,
-    clearAllHighlights,
     setUserInteractionEnabled,
+    clearAllHighlights,
     highlightMovementDestinations,
-    initializePlayerTurn,
-    showErrorMessage,
-    revertToLastValidState,
-  } = gameStateHook;
+  } = deps;
+
+  // ローカル関数: クリック座標から位置インデックスを取得
+  const getClickedPositionIndex = useCallback((canvas: HTMLCanvasElement, clickX: number, clickY: number): number => {
+    return Array.from({ length: 8 }).findIndex((_, posIndex) => {
+      const { x, y, width, height } = calcPosRect(canvas, BOARD_CONSTANTS.PIECE_WIDTH, posIndex);
+      return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
+    });
+  }, []);
+
+  // ローカル関数: 移動アクションの実行
+  const executeMoveAction = useCallback(async (fromPosition: any, toPosition: any) => {
+    const moveAction: MoveAction = {
+      Move: { from: fromPosition, to: toPosition }
+    };
+    
+    console.log('移動アクションを実行:', moveAction);
+    const newGameState = await GameAPI.makeMove(moveAction);
+    console.log('移動後の新しいゲーム状態:', newGameState);
+    
+    updateBoardFromGameState(newGameState);
+    clearAllHighlights();
+    setSelectedPiecePosition(null);
+    setUserInteractionEnabled(false); // AI の手番まで無効化
+  }, [updateBoardFromGameState, clearAllHighlights, setSelectedPiecePosition, setUserInteractionEnabled]);
+
+  // ローカル関数: 配置アクションの実行
+  const executePlaceAction = useCallback(async (position: any, player: any) => {
+    const placeAction: MoveAction = {
+      Place: { position, player }
+    };
+    
+    console.log('配置アクションを実行:', placeAction);
+    const newGameState = await GameAPI.makeMove(placeAction);
+    console.log('配置後の新しいゲーム状態:', newGameState);
+    
+    updateBoardFromGameState(newGameState);
+    clearAllHighlights();
+    setUserInteractionEnabled(false); // AI の手番まで無効化
+  }, [updateBoardFromGameState, clearAllHighlights, setUserInteractionEnabled]);
+
+  // ローカル関数: 選択状態のクリア
+  const clearSelection = useCallback(() => {
+    setSelectedPiecePosition(null);
+    clearAllHighlights();
+    // プレイヤーターンの再初期化は上位で行う
+  }, [setSelectedPiecePosition, clearAllHighlights]);
+
+  // ローカル関数: コマの選択
+  const selectPiece = useCallback(async (posIndex: number, position: any) => {
+    setSelectedPiecePosition(posIndex);
+    setLiftedPieces([posIndex]);
+    setHighlightedPieces([]); // コマのハイライトをクリア
+    await highlightMovementDestinations(position);
+  }, [setSelectedPiecePosition, setLiftedPieces, setHighlightedPieces, highlightMovementDestinations]);
 
   const handleCanvasClick = useCallback(async (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!userInteractionEnabled || !gameState) return;
@@ -54,13 +111,8 @@ export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
     
-    // どのposIndexの領域内がクリックされたかを判定
-    const clickedPosIndex = Array.from({ length: 8 }).findIndex((_, posIndex) => {
-      const { x, y, width, height } = calcPosRect(canvas, BOARD_CONSTANTS.PIECE_WIDTH, posIndex);
-      return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
-    });
-
-    // クリックされた位置が領域内にない場合は何もしない
+    // クリックされた位置を判定
+    const clickedPosIndex = getClickedPositionIndex(canvas, clickX, clickY);
     if (clickedPosIndex === -1) return;
     
     const clickedPosition = indexToPosition(clickedPosIndex);
@@ -70,55 +122,25 @@ export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
       if (selectedPiecePosition !== null) {
         const fromPosition = indexToPosition(selectedPiecePosition);
         
-        // 移動先として有効かチェック
         if (highlightedCells.includes(clickedPosIndex)) {
-          const moveAction: MoveAction = {
-            Move: { from: fromPosition, to: clickedPosition }
-          };
-          
-          console.log('移動アクションを実行:', moveAction);
-          const newGameState = await GameAPI.makeMove(moveAction);
-          console.log('移動後の新しいゲーム状態:', newGameState);
-          
-          // 即座にボード状態を更新
-          updateBoardFromGameState(newGameState);
-          clearAllHighlights();
-          setSelectedPiecePosition(null);
-          setUserInteractionEnabled(false); // AI の手番まで無効化
+          await executeMoveAction(fromPosition, clickedPosition);
         } else {
-          // 無効な移動先の場合、選択をクリア
-          setSelectedPiecePosition(null);
-          clearAllHighlights();
-          initializePlayerTurn();
+          clearSelection();
         }
       } else {
         // 配置可能なマスがクリックされた場合
         if (highlightedCells.includes(clickedPosIndex)) {
-          const placeAction: MoveAction = {
-            Place: { position: clickedPosition, player: currentPlayer }
-          };
-          
-          console.log('配置アクションを実行:', placeAction);
-          const newGameState = await GameAPI.makeMove(placeAction);
-          console.log('配置後の新しいゲーム状態:', newGameState);
-          
-          // 即座にボード状態を更新
-          updateBoardFromGameState(newGameState);
-          clearAllHighlights();
-          setUserInteractionEnabled(false); // AI の手番まで無効化
+          await executePlaceAction(clickedPosition, currentPlayer);
         }
         // 移動可能なコマがクリックされた場合
         else if (highlightedPieces.includes(clickedPosIndex)) {
-          setSelectedPiecePosition(clickedPosIndex);
-          setLiftedPieces([clickedPosIndex]);
-          setHighlightedPieces([]); // コマのハイライトをクリア
-          await highlightMovementDestinations(clickedPosition);
+          await selectPiece(clickedPosIndex, clickedPosition);
         }
       }
     } catch (error) {
       console.error('手の実行に失敗しました:', error);
       showErrorMessage('手の実行に失敗しました');
-      revertToLastValidState();
+      // エラー時の状態復元は上位で行う
     }
   }, [
     userInteractionEnabled,
@@ -127,16 +149,12 @@ export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
     highlightedCells,
     highlightedPieces,
     currentPlayer,
-    setSelectedPiecePosition,
-    setLiftedPieces,
-    setHighlightedPieces,
-    updateBoardFromGameState,
-    clearAllHighlights,
-    setUserInteractionEnabled,
-    highlightMovementDestinations,
-    initializePlayerTurn,
+    getClickedPositionIndex,
+    executeMoveAction,
+    executePlaceAction,
+    clearSelection,
+    selectPiece,
     showErrorMessage,
-    revertToLastValidState,
   ]);
 
   return { handleCanvasClick };

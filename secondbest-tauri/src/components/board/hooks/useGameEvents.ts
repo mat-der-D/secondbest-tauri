@@ -10,36 +10,65 @@ import {
   TurnPhase
 } from '../../../types/game';
 
-interface GameStateHook {
+interface GameEventsDependencies {
+  // コア状態更新関数
   updateBoardFromGameState: (gameState: any) => void;
-  initializePlayerTurn: () => void;
   setShowSecondBest: (show: boolean) => void;
-  promptForAlternativeMove: () => void;
-  highlightAlternativeMoves: () => void;
-  setUserInteractionEnabled: (enabled: boolean) => void;
   setTurnPhase: (phase: TurnPhase) => void;
-  disableUserInteraction: () => void;
-  enableNormalMoveUI: () => void;
-  showSecondBestOption: () => void;
+  setUserInteractionEnabled: (enabled: boolean) => void;
   showErrorMessage: (message: string) => void;
+  
+  // フロー制御関数
+  initializePlayerTurn: () => void;
+  clearAllHighlights: () => void;
   revertToLastValidState: () => void;
 }
 
-export const useGameEvents = (gameState: GameStateHook) => {
+export const useGameEvents = (deps: GameEventsDependencies) => {
   const {
     updateBoardFromGameState,
-    initializePlayerTurn,
     setShowSecondBest,
-    promptForAlternativeMove,
-    highlightAlternativeMoves,
-    setUserInteractionEnabled,
     setTurnPhase,
-    disableUserInteraction,
-    enableNormalMoveUI,
-    showSecondBestOption,
+    setUserInteractionEnabled,
     showErrorMessage,
+    initializePlayerTurn,
+    clearAllHighlights,
     revertToLastValidState,
-  } = gameState;
+  } = deps;
+
+  // ローカル関数: 代替手選択のプロンプト
+  const promptForAlternativeMove = useCallback(() => {
+    // 前回の手を取り消し、代替手選択のUI表示
+    clearAllHighlights();
+    setUserInteractionEnabled(true); // ユーザー操作を有効化
+    // TODO: ユーザーガイダンスの表示
+    console.log('代替手を選択してください');
+  }, [clearAllHighlights, setUserInteractionEnabled]);
+
+  // ローカル関数: 代替手のハイライト表示
+  const highlightAlternativeMoves = useCallback(() => {
+    // TODO: 前回選択した手以外の合法手をフィルタリング
+    // 現在は通常のプレイヤーターン初期化と同じ処理
+    initializePlayerTurn();
+  }, [initializePlayerTurn]);
+
+  // ローカル関数: 通常移動UIの有効化
+  const enableNormalMoveUI = useCallback(() => {
+    setUserInteractionEnabled(true);
+    setTurnPhase(TurnPhase.WaitingForMove);
+  }, [setUserInteractionEnabled, setTurnPhase]);
+
+  // ローカル関数: ユーザー操作の無効化
+  const disableUserInteraction = useCallback(() => {
+    setUserInteractionEnabled(false);
+    clearAllHighlights();
+  }, [setUserInteractionEnabled, clearAllHighlights]);
+
+  // ローカル関数: Second Best宣言オプションの表示
+  const showSecondBestOption = useCallback(() => {
+    // TODO: Second Best宣言ボタンの表示
+    console.log('Second Best宣言が可能です');
+  }, []);
   
   // イベントハンドラー
   const handleAiMove = useCallback((event: AiMoveEvent) => {
