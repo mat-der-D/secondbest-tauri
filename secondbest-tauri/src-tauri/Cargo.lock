@@ -3023,9 +3023,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
+name = "secondbest"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7678080cf4660cbb43ecb382e8c93c7ce135894ce8b62064c97f1147ae65b20e"
+dependencies = [
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "secondbest-tauri"
 version = "0.1.0"
 dependencies = [
+ "secondbest",
  "serde",
  "serde_json",
  "tauri",
