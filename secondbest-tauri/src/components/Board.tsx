@@ -668,6 +668,7 @@ const Board: React.FC = () => {
         else if (highlightedPieces.includes(clickedPosIndex)) {
           setSelectedPiecePosition(clickedPosIndex);
           setLiftedPieces([clickedPosIndex]);
+          setHighlightedPieces([]); // コマのハイライトをクリア
           await highlightMovementDestinations(clickedPosition);
         }
       }
