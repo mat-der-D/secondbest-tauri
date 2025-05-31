@@ -1,5 +1,19 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import './Board.css';
+import { GameAPI, GameEventListeners } from '../lib/gameApi';
+import { 
+  GameState, 
+  MoveAction, 
+  Player, 
+  Position, 
+  TurnPhase,
+  AiMoveEvent,
+  AiSecondBestEvent,
+  AiSecondMoveEvent,
+  GameOverEvent,
+  TurnPhaseEvent,
+  AiErrorEvent
+} from '../types/game';
 
 // 定数定義
 const BOARD_CONSTANTS = {
@@ -34,6 +48,29 @@ interface Images {
   cellFrame: HTMLImageElement | null;
   secondBest: HTMLImageElement | null;
 }
+
+// Position列挙型とposIndexの変換関数
+const positionToIndex = (position: Position): number => {
+  const positionMap: Record<Position, number> = {
+    [Position.N]: 0, [Position.NE]: 1, [Position.E]: 2, [Position.SE]: 3,
+    [Position.S]: 4, [Position.SW]: 5, [Position.W]: 6, [Position.NW]: 7
+  };
+  return positionMap[position];
+};
+
+const indexToPosition = (index: number): Position => {
+  const indexMap: Position[] = [Position.N, Position.NE, Position.E, Position.SE, Position.S, Position.SW, Position.W, Position.NW];
+  return indexMap[index];
+};
+
+// Player型とcolor文字の変換関数
+const playerToColor = (player: Player): 'B' | 'W' => {
+  return player === Player.Black ? 'B' : 'W';
+};
+
+const colorToPlayer = (color: 'B' | 'W'): Player => {
+  return color === 'B' ? Player.Black : Player.White;
+};
 
 // ユーティリティ関数
 const adjustSize = (originalWidth: number, originalHeight: number, targetWidth: number) => {
@@ -292,28 +329,246 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useImageLoader();
   
-  const [pieces, setPieces] = useState<Piece[]>(() => {
-    // 初期状態で各マスに3つずつコマを配置
-    const initialPieces: Piece[] = [];
-    for (let posIndex = 0; posIndex < 8; posIndex++) {
-      // 偶数のマスには白黒白、奇数のマスには黒白黒を配置
-      const colors: ('B' | 'W')[] = posIndex % 2 === 0 ? ['W', 'B', 'W'] : ['B', 'W', 'B'];
-      for (let heightIndex = 0; heightIndex < 3; heightIndex++) {
-        initialPieces.push({
-          posIndex,
-          heightIndex,
-          color: colors[heightIndex]
-        });
-      }
-    }
-    return initialPieces;
-  });
+  // ゲーム状態
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<Player>(Player.Black);
+  const [turnPhase, setTurnPhase] = useState<TurnPhase>(TurnPhase.WaitingForMove);
+  const [userInteractionEnabled, setUserInteractionEnabled] = useState<boolean>(true);
   
+  // 表示状態
+  const [pieces, setPieces] = useState<Piece[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<number[]>([]);
   const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]);
   const [liftedPieces, setLiftedPieces] = useState<number[]>([]);
-  const [clickCount, setClickCount] = useState<number>(0);
   const [showSecondBest, setShowSecondBest] = useState<boolean>(false);
+  
+  // 操作状態
+  const [selectedPiecePosition, setSelectedPiecePosition] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // ハイライト管理関数
+  const updateHighlightsFromLegalMoves = useCallback((legalMoves: MoveAction[]) => {
+    const placeCells: number[] = [];
+    const movePieces: number[] = [];
+    
+    legalMoves.forEach(move => {
+      if ('Place' in move) {
+        const posIndex = positionToIndex(move.Place.position);
+        placeCells.push(posIndex);
+      } else if ('Move' in move) {
+        const fromIndex = positionToIndex(move.Move.from);
+        movePieces.push(fromIndex);
+      }
+    });
+    
+    setHighlightedCells(placeCells);
+    setHighlightedPieces(movePieces);
+  }, []);
+
+  const highlightMovementDestinations = useCallback(async (fromPosition: Position) => {
+    try {
+      const legalMoves = await GameAPI.getLegalMoves();
+      const destinations: number[] = [];
+      
+      legalMoves.forEach(move => {
+        if ('Move' in move && move.Move.from === fromPosition) {
+          const toIndex = positionToIndex(move.Move.to);
+          destinations.push(toIndex);
+        }
+      });
+      
+      setHighlightedCells(destinations);
+    } catch (error) {
+      console.error('移動先の取得に失敗しました:', error);
+      showErrorMessage('移動先の取得に失敗しました');
+    }
+  }, []);
+
+  const clearAllHighlights = useCallback(() => {
+    setHighlightedCells([]);
+    setHighlightedPieces([]);
+    setLiftedPieces([]);
+  }, []);
+
+  // ゲーム状態管理関数
+  const initializePlayerTurn = useCallback(async () => {
+    try {
+      const legalMoves = await GameAPI.getLegalMoves();
+      updateHighlightsFromLegalMoves(legalMoves);
+      setUserInteractionEnabled(true);
+      setSelectedPiecePosition(null);
+    } catch (error) {
+      console.error('プレイヤーターンの初期化に失敗しました:', error);
+      showErrorMessage('ゲーム状態の取得に失敗しました');
+    }
+  }, [updateHighlightsFromLegalMoves]);
+
+  const updateBoardFromGameState = useCallback((newGameState: GameState) => {
+    console.log('ゲーム状態を更新中:', newGameState);
+    setGameState(newGameState);
+    setCurrentPlayer(newGameState.current_player);
+    setTurnPhase(newGameState.turn_phase);
+    
+    // GameStateからPiece配列を生成
+    const newPieces: Piece[] = [];
+    Object.entries(newGameState.board).forEach(([positionStr, pieceStack]) => {
+      const position = positionStr as Position;
+      const posIndex = positionToIndex(position);
+      
+      pieceStack.pieces.forEach((player, heightIndex) => {
+        newPieces.push({
+          posIndex,
+          heightIndex,
+          color: playerToColor(player)
+        });
+      });
+    });
+    
+    console.log('新しいpieces配列:', newPieces);
+    setPieces(newPieces);
+  }, []);
+
+  const promptForAlternativeMove = useCallback(() => {
+    // 前回の手を取り消し、代替手選択のUI表示
+    setSelectedPiecePosition(null);
+    clearAllHighlights();
+    setUserInteractionEnabled(true); // ユーザー操作を有効化
+    // TODO: ユーザーガイダンスの表示
+    console.log('代替手を選択してください');
+  }, [clearAllHighlights]);
+
+  const highlightAlternativeMoves = useCallback(async () => {
+    try {
+      const legalMoves = await GameAPI.getLegalMoves();
+      // TODO: 前回選択した手以外の合法手をフィルタリング
+      updateHighlightsFromLegalMoves(legalMoves);
+      setUserInteractionEnabled(true); // ユーザー操作を有効化
+    } catch (error) {
+      console.error('代替手の取得に失敗しました:', error);
+      showErrorMessage('代替手の取得に失敗しました');
+    }
+  }, [updateHighlightsFromLegalMoves]);
+
+  // UI制御関数
+  const enableNormalMoveUI = useCallback(() => {
+    setUserInteractionEnabled(true);
+    setTurnPhase(TurnPhase.WaitingForMove);
+  }, []);
+
+  const disableUserInteraction = useCallback(() => {
+    setUserInteractionEnabled(false);
+    clearAllHighlights();
+  }, [clearAllHighlights]);
+
+  const showSecondBestOption = useCallback(() => {
+    // TODO: Second Best宣言ボタンの表示
+    console.log('Second Best宣言が可能です');
+  }, []);
+
+  // エラーハンドリング関数
+  const showErrorMessage = useCallback((message: string) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(''), 3000);
+  }, []);
+
+  const revertToLastValidState = useCallback(async () => {
+    try {
+      const currentGameState = await GameAPI.getGameState();
+      updateBoardFromGameState(currentGameState);
+      clearAllHighlights();
+    } catch (error) {
+      console.error('状態の復元に失敗しました:', error);
+    }
+  }, [updateBoardFromGameState, clearAllHighlights]);
+
+  // イベントハンドラー
+  const handleAiMove = useCallback((event: AiMoveEvent) => {
+    updateBoardFromGameState(event.new_state);
+    initializePlayerTurn();
+  }, [updateBoardFromGameState, initializePlayerTurn]);
+
+  const handleAiSecondBest = useCallback((event: AiSecondBestEvent) => {
+    console.log('AI Second Best宣言を受信:', event);
+    setShowSecondBest(true);
+    setTimeout(() => setShowSecondBest(false), 2000);
+    
+    updateBoardFromGameState(event.new_state);
+    promptForAlternativeMove();
+    highlightAlternativeMoves();
+    
+    // ユーザー操作を有効化
+    setUserInteractionEnabled(true);
+  }, [updateBoardFromGameState, promptForAlternativeMove, highlightAlternativeMoves]);
+
+  const handleAiSecondMove = useCallback((event: AiSecondMoveEvent) => {
+    updateBoardFromGameState(event.new_state);
+    setTurnPhase(TurnPhase.WaitingForMove);
+    initializePlayerTurn();
+  }, [updateBoardFromGameState, initializePlayerTurn]);
+
+  const handleGameOver = useCallback((event: GameOverEvent) => {
+    console.log('ゲーム終了:', event);
+    disableUserInteraction();
+    // TODO: ゲーム終了UIの表示
+  }, [disableUserInteraction]);
+
+  const handleTurnPhaseChange = useCallback((event: TurnPhaseEvent) => {
+    setTurnPhase(event.new_phase);
+    setCurrentPlayer(event.current_player);
+    
+    switch (event.new_phase) {
+      case TurnPhase.WaitingForMove:
+        enableNormalMoveUI();
+        initializePlayerTurn();
+        break;
+      case TurnPhase.WaitingForSecondBest:
+        showSecondBestOption();
+        break;
+      case TurnPhase.WaitingForSecondMove:
+        promptForAlternativeMove();
+        highlightAlternativeMoves();
+        break;
+    }
+  }, [enableNormalMoveUI, initializePlayerTurn, showSecondBestOption, promptForAlternativeMove, highlightAlternativeMoves]);
+
+  const handleAiError = useCallback((event: AiErrorEvent) => {
+    showErrorMessage(`AI エラー: ${event.message}`);
+    revertToLastValidState();
+  }, [showErrorMessage, revertToLastValidState]);
+
+  // イベントリスナーの設定
+  useEffect(() => {
+    const setupListeners = async () => {
+      try {
+        await GameEventListeners.onAiMoveCompleted(handleAiMove);
+        await GameEventListeners.onAiSecondBestDeclared(handleAiSecondBest);
+        await GameEventListeners.onAiSecondMoveCompleted(handleAiSecondMove);
+        await GameEventListeners.onGameOver(handleGameOver);
+        await GameEventListeners.onTurnPhaseChanged(handleTurnPhaseChange);
+        await GameEventListeners.onAiError(handleAiError);
+      } catch (error) {
+        console.error('イベントリスナーの設定に失敗しました:', error);
+      }
+    };
+
+    setupListeners();
+  }, [handleAiMove, handleAiSecondBest, handleAiSecondMove, handleGameOver, handleTurnPhaseChange, handleAiError]);
+
+  // ゲーム初期化
+  useEffect(() => {
+    const initializeGame = async () => {
+      try {
+        const initialGameState = await GameAPI.newGame();
+        updateBoardFromGameState(initialGameState);
+        initializePlayerTurn();
+      } catch (error) {
+        console.error('ゲームの初期化に失敗しました:', error);
+        showErrorMessage('ゲームの初期化に失敗しました');
+      }
+    };
+
+    initializeGame();
+  }, [updateBoardFromGameState, initializePlayerTurn, showErrorMessage]);
 
   // 描画処理を統合したuseEffect
   useEffect(() => {
@@ -345,36 +600,81 @@ const Board: React.FC = () => {
     }
   }, [pieces, images, highlightedCells, highlightedPieces, liftedPieces, showSecondBest]);
 
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasClick = async (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!userInteractionEnabled || !gameState) return;
+    
     const canvas = canvasRef.current;
-    if (canvas) {
-      // キャンバス上のクリック座標を取得
-      const rect = canvas.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const clickY = event.clientY - rect.top;
-      
-      // どのposIndexの領域内がクリックされたかを判定
-      const clickedPosIndex = Array.from({ length: 8 }).findIndex((_, posIndex) => {
-        const { x, y, width, height } = calcPosRect(canvas, BOARD_CONSTANTS.PIECE_WIDTH, posIndex);
-        return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
-      });
+    if (!canvas) return;
 
-      // クリックされた位置が領域内にない場合は何もしない
-      if (clickedPosIndex === -1) return;
-      
-      // secondbest.svgの表示・非表示を切り替える
-      setShowSecondBest(prevShow => !prevShow);
-      
-      // マスのリフト状態を切り替える
-      setLiftedPieces(prevLiftedPieces => {
-        if (prevLiftedPieces.includes(clickedPosIndex)) {
-          // すでに含まれている場合は削除
-          return prevLiftedPieces.filter(index => index !== clickedPosIndex);
+    // キャンバス上のクリック座標を取得
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    // どのposIndexの領域内がクリックされたかを判定
+    const clickedPosIndex = Array.from({ length: 8 }).findIndex((_, posIndex) => {
+      const { x, y, width, height } = calcPosRect(canvas, BOARD_CONSTANTS.PIECE_WIDTH, posIndex);
+      return clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height;
+    });
+
+    // クリックされた位置が領域内にない場合は何もしない
+    if (clickedPosIndex === -1) return;
+    
+    const clickedPosition = indexToPosition(clickedPosIndex);
+
+    try {
+      // 移動元が選択されている場合
+      if (selectedPiecePosition !== null) {
+        const fromPosition = indexToPosition(selectedPiecePosition);
+        
+        // 移動先として有効かチェック
+        if (highlightedCells.includes(clickedPosIndex)) {
+          const moveAction: MoveAction = {
+            Move: { from: fromPosition, to: clickedPosition }
+          };
+          
+          console.log('移動アクションを実行:', moveAction);
+          const newGameState = await GameAPI.makeMove(moveAction);
+          console.log('移動後の新しいゲーム状態:', newGameState);
+          
+          // 即座にボード状態を更新
+          updateBoardFromGameState(newGameState);
+          clearAllHighlights();
+          setSelectedPiecePosition(null);
+          setUserInteractionEnabled(false); // AI の手番まで無効化
         } else {
-          // 含まれていない場合は追加
-          return [...prevLiftedPieces, clickedPosIndex];
+          // 無効な移動先の場合、選択をクリア
+          setSelectedPiecePosition(null);
+          clearAllHighlights();
+          initializePlayerTurn();
         }
-      });
+      } else {
+        // 配置可能なマスがクリックされた場合
+        if (highlightedCells.includes(clickedPosIndex)) {
+          const placeAction: MoveAction = {
+            Place: { position: clickedPosition, player: currentPlayer }
+          };
+          
+          console.log('配置アクションを実行:', placeAction);
+          const newGameState = await GameAPI.makeMove(placeAction);
+          console.log('配置後の新しいゲーム状態:', newGameState);
+          
+          // 即座にボード状態を更新
+          updateBoardFromGameState(newGameState);
+          clearAllHighlights();
+          setUserInteractionEnabled(false); // AI の手番まで無効化
+        }
+        // 移動可能なコマがクリックされた場合
+        else if (highlightedPieces.includes(clickedPosIndex)) {
+          setSelectedPiecePosition(clickedPosIndex);
+          setLiftedPieces([clickedPosIndex]);
+          await highlightMovementDestinations(clickedPosition);
+        }
+      }
+    } catch (error) {
+      console.error('手の実行に失敗しました:', error);
+      showErrorMessage('手の実行に失敗しました');
+      revertToLastValidState();
     }
   };
 
