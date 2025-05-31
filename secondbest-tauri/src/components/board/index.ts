@@ -11,4 +11,5 @@ export * from './drawing';
 export { useImageLoader } from './hooks/useImageLoader';
 export { useGameState } from './hooks/useGameState';
 export { useGameEvents } from './hooks/useGameEvents';
-export { useCanvasInteraction } from './hooks/useCanvasInteraction'; 
+export { useCanvasInteraction } from './hooks/useCanvasInteraction';
+export { useBoardController } from './hooks/useBoardController'; 

@@ -4,7 +4,7 @@ import { MoveAction } from '../../../types/game';
 import { BOARD_CONSTANTS, indexToPosition } from '../constants';
 import { calcPosRect } from '../utils';
 
-interface UseCanvasInteractionProps {
+interface GameStateHook {
   userInteractionEnabled: boolean;
   gameState: any;
   selectedPiecePosition: number | null;
@@ -23,24 +23,25 @@ interface UseCanvasInteractionProps {
   revertToLastValidState: () => void;
 }
 
-export const useCanvasInteraction = ({
-  userInteractionEnabled,
-  gameState,
-  selectedPiecePosition,
-  highlightedCells,
-  highlightedPieces,
-  currentPlayer,
-  setSelectedPiecePosition,
-  setLiftedPieces,
-  setHighlightedPieces,
-  updateBoardFromGameState,
-  clearAllHighlights,
-  setUserInteractionEnabled,
-  highlightMovementDestinations,
-  initializePlayerTurn,
-  showErrorMessage,
-  revertToLastValidState,
-}: UseCanvasInteractionProps) => {
+export const useCanvasInteraction = (gameStateHook: GameStateHook) => {
+  const {
+    userInteractionEnabled,
+    gameState,
+    selectedPiecePosition,
+    highlightedCells,
+    highlightedPieces,
+    currentPlayer,
+    setSelectedPiecePosition,
+    setLiftedPieces,
+    setHighlightedPieces,
+    updateBoardFromGameState,
+    clearAllHighlights,
+    setUserInteractionEnabled,
+    highlightMovementDestinations,
+    initializePlayerTurn,
+    showErrorMessage,
+    revertToLastValidState,
+  } = gameStateHook;
 
   const handleCanvasClick = useCallback(async (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!userInteractionEnabled || !gameState) return;

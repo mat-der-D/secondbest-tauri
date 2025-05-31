@@ -2,9 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import './Board.css';
 import { BOARD_CONSTANTS } from './board/constants';
 import { useImageLoader } from './board/hooks/useImageLoader';
-import { useGameState } from './board/hooks/useGameState';
-import { useGameEvents } from './board/hooks/useGameEvents';
-import { useCanvasInteraction } from './board/hooks/useCanvasInteraction';
+import { useBoardController } from './board/hooks/useBoardController';
 import {
   drawBackground,
   drawHighlightedCells,
@@ -18,73 +16,17 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useImageLoader();
   
-  // ゲーム状態管理
-  const gameStateHook = useGameState();
+  // ボード全体の状態とロジックを統合管理
   const {
-    gameState,
-    currentPlayer,
-    userInteractionEnabled,
     pieces,
     highlightedCells,
     highlightedPieces,
     liftedPieces,
     showSecondBest,
-    selectedPiecePosition,
     errorMessage,
-    setLiftedPieces,
-    setShowSecondBest,
-    setSelectedPiecePosition,
-    setUserInteractionEnabled,
-    setTurnPhase,
-    highlightMovementDestinations,
-    clearAllHighlights,
-    initializePlayerTurn,
-    updateBoardFromGameState,
-    promptForAlternativeMove,
-    highlightAlternativeMoves,
-    enableNormalMoveUI,
-    disableUserInteraction,
-    showSecondBestOption,
-    showErrorMessage,
-    revertToLastValidState,
     initializeGame,
-  } = gameStateHook;
-
-  // ゲームイベント処理
-  useGameEvents({
-    updateBoardFromGameState,
-    initializePlayerTurn,
-    setShowSecondBest,
-    promptForAlternativeMove,
-    highlightAlternativeMoves,
-    setUserInteractionEnabled,
-    setTurnPhase,
-    disableUserInteraction,
-    enableNormalMoveUI,
-    showSecondBestOption,
-    showErrorMessage,
-    revertToLastValidState,
-  });
-
-  // キャンバス操作処理
-  const { handleCanvasClick } = useCanvasInteraction({
-    userInteractionEnabled,
-    gameState,
-    selectedPiecePosition,
-    highlightedCells,
-    highlightedPieces,
-    currentPlayer,
-    setSelectedPiecePosition,
-    setLiftedPieces,
-    setHighlightedPieces: gameStateHook.setHighlightedPieces,
-    updateBoardFromGameState,
-    clearAllHighlights,
-    setUserInteractionEnabled,
-    highlightMovementDestinations,
-    initializePlayerTurn,
-    showErrorMessage,
-    revertToLastValidState,
-  });
+    handleCanvasClick,
+  } = useBoardController();
 
   // ゲーム初期化
   useEffect(() => {

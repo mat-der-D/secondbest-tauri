@@ -10,7 +10,7 @@ import {
   TurnPhase
 } from '../../../types/game';
 
-interface UseGameEventsProps {
+interface GameStateHook {
   updateBoardFromGameState: (gameState: any) => void;
   initializePlayerTurn: () => void;
   setShowSecondBest: (show: boolean) => void;
@@ -25,20 +25,21 @@ interface UseGameEventsProps {
   revertToLastValidState: () => void;
 }
 
-export const useGameEvents = ({
-  updateBoardFromGameState,
-  initializePlayerTurn,
-  setShowSecondBest,
-  promptForAlternativeMove,
-  highlightAlternativeMoves,
-  setUserInteractionEnabled,
-  setTurnPhase,
-  disableUserInteraction,
-  enableNormalMoveUI,
-  showSecondBestOption,
-  showErrorMessage,
-  revertToLastValidState,
-}: UseGameEventsProps) => {
+export const useGameEvents = (gameState: GameStateHook) => {
+  const {
+    updateBoardFromGameState,
+    initializePlayerTurn,
+    setShowSecondBest,
+    promptForAlternativeMove,
+    highlightAlternativeMoves,
+    setUserInteractionEnabled,
+    setTurnPhase,
+    disableUserInteraction,
+    enableNormalMoveUI,
+    showSecondBestOption,
+    showErrorMessage,
+    revertToLastValidState,
+  } = gameState;
   
   // イベントハンドラー
   const handleAiMove = useCallback((event: AiMoveEvent) => {
