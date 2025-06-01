@@ -68,6 +68,7 @@ export const useBoardController = () => {
   return {
     // 描画に必要な状態
     pieces: gameCore.pieces,
+    canDeclareSecondBest: gameCore.canDeclareSecondBest,
     highlightedCells: uiState.highlightedCells,
     highlightedPieces: uiState.highlightedPieces,
     liftedPieces: uiState.liftedPieces,
