@@ -7,7 +7,6 @@ import { calcPosRect } from '../utils';
 interface CanvasInteractionDependencies {
   // 読み取り専用状態
   userInteractionEnabled: boolean;
-  gameState: any;
   selectedPiecePosition: number | null;
   highlightedCells: number[];
   highlightedPieces: number[];
@@ -31,7 +30,6 @@ interface CanvasInteractionDependencies {
 export const useCanvasInteraction = (deps: CanvasInteractionDependencies) => {
   const {
     userInteractionEnabled,
-    gameState,
     selectedPiecePosition,
     highlightedCells,
     highlightedPieces,
@@ -101,7 +99,7 @@ export const useCanvasInteraction = (deps: CanvasInteractionDependencies) => {
   }, [setSelectedPiecePosition, setLiftedPieces, setHighlightedPieces, highlightMovementDestinations]);
 
   const handleCanvasClick = useCallback(async (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!userInteractionEnabled || !gameState) return;
+    if (!userInteractionEnabled) return;
     
     const canvas = event.currentTarget;
     if (!canvas) return;
@@ -144,7 +142,6 @@ export const useCanvasInteraction = (deps: CanvasInteractionDependencies) => {
     }
   }, [
     userInteractionEnabled,
-    gameState,
     selectedPiecePosition,
     highlightedCells,
     highlightedPieces,

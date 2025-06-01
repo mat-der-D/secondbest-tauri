@@ -8,7 +8,6 @@ import { Piece, positionToIndex, playerToColor } from '../constants';
  */
 export const useGameCore = () => {
   // ゲーム基本状態
-  const [gameState, setGameState] = useState<GameState | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player>(Player.Black);
   const [turnPhase, setTurnPhase] = useState<TurnPhase>(TurnPhase.WaitingForMove);
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -16,7 +15,6 @@ export const useGameCore = () => {
   // ゲーム状態更新
   const updateBoardFromGameState = useCallback((newGameState: GameState) => {
     console.log('ゲーム状態を更新中:', newGameState);
-    setGameState(newGameState);
     setCurrentPlayer(newGameState.current_player);
     setTurnPhase(newGameState.turn_phase);
     
@@ -62,7 +60,6 @@ export const useGameCore = () => {
 
   return {
     // 状態
-    gameState,
     currentPlayer,
     turnPhase,
     pieces,

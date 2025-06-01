@@ -50,7 +50,6 @@ export const useBoardController = () => {
   // キャンバス操作処理（必要最小限の依存関係のみ渡す）
   const canvasInteraction = useCanvasInteraction({
     userInteractionEnabled: userInteraction.userInteractionEnabled,
-    gameState: gameCore.gameState,
     selectedPiecePosition: userInteraction.selectedPiecePosition,
     highlightedCells: uiState.highlightedCells,
     highlightedPieces: uiState.highlightedPieces,
