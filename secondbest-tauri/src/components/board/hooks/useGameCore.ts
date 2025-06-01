@@ -11,12 +11,14 @@ export const useGameCore = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Player>(Player.Black);
   const [turnPhase, setTurnPhase] = useState<TurnPhase>(TurnPhase.WaitingForMove);
   const [pieces, setPieces] = useState<Piece[]>([]);
+  const [canDeclareSecondBest, setCanDeclareSecondBest] = useState<boolean>(true);
 
   // ゲーム状態更新
   const updateBoardFromGameState = useCallback((newGameState: GameState) => {
     console.log('ゲーム状態を更新中:', newGameState);
     setCurrentPlayer(newGameState.current_player);
     setTurnPhase(newGameState.turn_phase);
+    setCanDeclareSecondBest(newGameState.second_best_available);
     
     // GameStateからPiece配列を生成
     const newPieces: Piece[] = [];
@@ -63,6 +65,7 @@ export const useGameCore = () => {
     currentPlayer,
     turnPhase,
     pieces,
+    canDeclareSecondBest,
     
     // 状態更新関数
     setTurnPhase,
