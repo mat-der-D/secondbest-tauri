@@ -11,7 +11,7 @@ export const useUIState = () => {
   const [highlightedCells, setHighlightedCells] = useState<number[]>([]);
   const [highlightedPieces, setHighlightedPieces] = useState<number[]>([]);
   const [liftedPieces, setLiftedPieces] = useState<number[]>([]);
-  const [showSecondBest, setShowSecondBest] = useState<boolean>(false);
+  const [isSecondBestShown, setIsSecondBestShown] = useState<boolean>(false);
 
   // ハイライト管理関数
   const updateHighlightsFromLegalMoves = useCallback((legalMoves: MoveAction[]) => {
@@ -62,13 +62,13 @@ export const useUIState = () => {
     highlightedCells,
     highlightedPieces,
     liftedPieces,
-    showSecondBest,
+    isSecondBestShown,
     
     // 状態更新関数
     setHighlightedCells,
     setHighlightedPieces,
     setLiftedPieces,
-    setShowSecondBest,
+    setIsSecondBestShown,
     
     // ハイライト管理関数
     updateHighlightsFromLegalMoves,

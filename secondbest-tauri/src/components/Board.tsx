@@ -17,7 +17,7 @@ interface BoardProps {
   highlightedCells: number[];
   highlightedPieces: number[];
   liftedPieces: number[];
-  showSecondBest: boolean;
+  isSecondBestShown: boolean;
   errorMessage: string;
   onCanvasClick: (event: React.MouseEvent<HTMLCanvasElement>) => Promise<void>;
   onInitializeGame: () => Promise<void>;
@@ -29,7 +29,7 @@ const Board: React.FC<BoardProps> = ({
   highlightedCells,
   highlightedPieces,
   liftedPieces,
-  showSecondBest,
+  isSecondBestShown: isSecondBestShown,
   errorMessage,
   onCanvasClick,
   onInitializeGame,
@@ -67,10 +67,10 @@ const Board: React.FC<BoardProps> = ({
       images.pieceFrame!, BOARD_CONSTANTS.PIECE_WIDTH, BOARD_CONSTANTS.PIECE_LIFT_OFFSET_RATIO
     );
     
-    if (showSecondBest) {
+    if (isSecondBestShown) {
       drawSecondBest(ctx, canvas, images.secondBest!);
     }
-  }, [pieces, images, highlightedCells, highlightedPieces, liftedPieces, showSecondBest]);
+  }, [pieces, images, highlightedCells, highlightedPieces, liftedPieces, isSecondBestShown]);
 
   return (
     <div className="board-container">

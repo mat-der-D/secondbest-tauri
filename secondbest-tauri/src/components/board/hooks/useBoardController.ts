@@ -38,7 +38,7 @@ export const useBoardController = () => {
   // ゲームイベント処理（必要最小限の依存関係のみ渡す）
   useGameEvents({
     updateBoardFromGameState: gameCore.updateBoardFromGameState,
-    setShowSecondBest: uiState.setShowSecondBest,
+    setIsSecondBestShown: uiState.setIsSecondBestShown,
     setTurnPhase: gameCore.setTurnPhase,
     setUserInteractionEnabled: userInteraction.setUserInteractionEnabled,
     showErrorMessage: errorHandling.showErrorMessage,
@@ -72,7 +72,7 @@ export const useBoardController = () => {
     highlightedCells: uiState.highlightedCells,
     highlightedPieces: uiState.highlightedPieces,
     liftedPieces: uiState.liftedPieces,
-    showSecondBest: uiState.showSecondBest,
+    isSecondBestShown: uiState.isSecondBestShown,
     errorMessage: errorHandling.errorMessage,
     
     // 操作に必要な関数
@@ -80,7 +80,7 @@ export const useBoardController = () => {
     handleCanvasClick: canvasInteraction.handleCanvasClick,
     
     // 追加の状態と関数
-    setShowSecondBest: uiState.setShowSecondBest,
+    setIsSecondBestShown: uiState.setIsSecondBestShown,
     userInteractionEnabled: userInteraction.userInteractionEnabled,
   };
 }; 

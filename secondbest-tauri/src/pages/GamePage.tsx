@@ -15,7 +15,7 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
 
   const onRefreshClick = () => {
     if (!boardController.userInteractionEnabled) return;
-    boardController.setShowSecondBest(false);
+    boardController.setIsSecondBestShown(false);
     boardController.initializeGame();
   };
 
@@ -39,7 +39,7 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
           highlightedCells={boardController.highlightedCells}
           highlightedPieces={boardController.highlightedPieces}
           liftedPieces={boardController.liftedPieces}
-          showSecondBest={boardController.showSecondBest}
+          isSecondBestShown={boardController.isSecondBestShown}
           errorMessage={boardController.errorMessage}
           onCanvasClick={boardController.handleCanvasClick}
           onInitializeGame={boardController.initializeGame}
