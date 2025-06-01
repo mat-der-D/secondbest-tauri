@@ -6,7 +6,7 @@ import { TurnPhase } from '../../../types/game';
  */
 export const useUserInteraction = () => {
   // ユーザー操作状態
-  const [userInteractionEnabled, setUserInteractionEnabled] = useState<boolean>(true);
+  const [userInteractionEnabled, setUserInteractionEnabled] = useState<boolean>(false); // 準備ができるまで false
   const [selectedPiecePosition, setSelectedPiecePosition] = useState<number | null>(null);
 
   // UI制御関数
