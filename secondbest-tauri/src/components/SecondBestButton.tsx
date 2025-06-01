@@ -1,6 +1,7 @@
 import React from 'react';
 import './SecondBestButton.css';
 import { GameAPI } from '../lib/gameApi';
+import { BOARD_CONSTANTS } from './board/constants';
 
 interface SecondBestButtonProps {
   userInteractionEnabled: boolean;
@@ -15,7 +16,7 @@ const SecondBestButton: React.FC<SecondBestButtonProps> = ({ userInteractionEnab
   const onClick = async () => {
     if (!userInteractionEnabled) return;
     if (!canDeclareSecondBest) return;
-    showSecondBest(2000);
+    showSecondBest(BOARD_CONSTANTS.SECOND_BEST_DURATION);
     const newState = await GameAPI.declareSecondBest();
     updateBoardFromGameState(newState);
     setUserInteractionEnabled(false);

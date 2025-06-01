@@ -7,6 +7,7 @@ export const BOARD_CONSTANTS = {
   PIECE_WIDTH: 50,
   CELL_WIDTH: 70,
   PIECE_LIFT_OFFSET_RATIO: 0.2,
+  SECOND_BEST_DURATION: 2000,
 } as const;
 
 export const IMAGE_PATHS = {

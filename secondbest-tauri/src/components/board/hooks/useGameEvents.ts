@@ -9,6 +9,7 @@ import {
   AiErrorEvent,
   TurnPhase
 } from '../../../types/game';
+import { BOARD_CONSTANTS } from '../constants';
 
 interface GameEventsDependencies {
   // コア状態更新関数
@@ -78,7 +79,7 @@ export const useGameEvents = (deps: GameEventsDependencies) => {
 
   const handleAiSecondBest = useCallback((event: AiSecondBestEvent) => {
     console.log('AI Second Best宣言を受信:', event);
-    showSecondBest(2000);
+    showSecondBest(BOARD_CONSTANTS.SECOND_BEST_DURATION);
     updateBoardFromGameState(event.new_state);
     promptForAlternativeMove();
     highlightAlternativeMoves();
