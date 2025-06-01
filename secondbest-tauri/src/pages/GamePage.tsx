@@ -33,7 +33,13 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
       </div>
       
       <div className="game-content">
-        <SecondBestButton />
+        <SecondBestButton 
+          userInteractionEnabled={boardController.userInteractionEnabled}
+          canDeclareSecondBest={boardController.canDeclareSecondBest}
+          showSecondBest={boardController.showSecondBest}
+          updateBoardFromGameState={boardController.updateBoardFromGameState}
+          setUserInteractionEnabled={boardController.setUserInteractionEnabled}
+        />
         <Board 
           pieces={boardController.pieces}
           highlightedCells={boardController.highlightedCells}

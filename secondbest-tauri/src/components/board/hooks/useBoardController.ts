@@ -83,5 +83,7 @@ export const useBoardController = () => {
     showSecondBest: uiState.showSecondBest,
     clearSecondBest: uiState.clearSecondBest,
     userInteractionEnabled: userInteraction.userInteractionEnabled,
+    updateBoardFromGameState: gameCore.updateBoardFromGameState,
+    setUserInteractionEnabled: userInteraction.setUserInteractionEnabled,
   };
 }; 
