@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import './Board.css';
 import { BOARD_CONSTANTS } from './board/constants';
 import { useImageLoader } from './board/hooks/useImageLoader';
-import { useBoardController } from './board/hooks/useBoardController';
+import { Piece } from './board/constants';
 import {
   drawBackground,
   drawHighlightedCells,
@@ -11,27 +11,36 @@ import {
   drawSecondBest,
 } from './board/drawing';
 
+// Boardコンポーネントのpropsインターフェース
+interface BoardProps {
+  pieces: Piece[];
+  highlightedCells: number[];
+  highlightedPieces: number[];
+  liftedPieces: number[];
+  showSecondBest: boolean;
+  errorMessage: string;
+  onCanvasClick: (event: React.MouseEvent<HTMLCanvasElement>) => Promise<void>;
+  onInitializeGame: () => Promise<void>;
+}
+
 // メインコンポーネント
-const Board: React.FC = () => {
+const Board: React.FC<BoardProps> = ({
+  pieces,
+  highlightedCells,
+  highlightedPieces,
+  liftedPieces,
+  showSecondBest,
+  errorMessage,
+  onCanvasClick,
+  onInitializeGame,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useImageLoader();
-  
-  // ボード全体の状態とロジックを統合管理
-  const {
-    pieces,
-    highlightedCells,
-    highlightedPieces,
-    liftedPieces,
-    showSecondBest,
-    errorMessage,
-    initializeGame,
-    handleCanvasClick,
-  } = useBoardController();
 
   // ゲーム初期化
   useEffect(() => {
-    initializeGame();
-  }, [initializeGame]);
+    onInitializeGame();
+  }, [onInitializeGame]);
 
   // 描画処理を統合したuseEffect
   useEffect(() => {
@@ -70,7 +79,7 @@ const Board: React.FC = () => {
         className="board-canvas"
         width={BOARD_CONSTANTS.CANVAS_WIDTH}
         height={BOARD_CONSTANTS.CANVAS_HEIGHT}
-        onClick={handleCanvasClick}
+        onClick={onCanvasClick}
       />
       {errorMessage && (
         <div className="error-message">

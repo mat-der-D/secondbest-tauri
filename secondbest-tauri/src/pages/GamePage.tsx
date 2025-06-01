@@ -2,6 +2,7 @@ import React from 'react';
 import SecondBestButton from '../components/SecondBestButton';
 import Board from '../components/Board';
 import StatusDisplay from '../components/StatusDisplay';
+import { useBoardController } from '../components/board/hooks/useBoardController';
 import './GamePage.css';
 
 interface GamePageProps {
@@ -9,6 +10,9 @@ interface GamePageProps {
 }
 
 const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
+  // ボードの状態をGamePageで管理
+  const boardController = useBoardController();
+
   return (
     <div className="game-page">
       <div className="game-header">
@@ -24,7 +28,16 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
       
       <div className="game-content">
         <SecondBestButton />
-        <Board />
+        <Board 
+          pieces={boardController.pieces}
+          highlightedCells={boardController.highlightedCells}
+          highlightedPieces={boardController.highlightedPieces}
+          liftedPieces={boardController.liftedPieces}
+          showSecondBest={boardController.showSecondBest}
+          errorMessage={boardController.errorMessage}
+          onCanvasClick={boardController.handleCanvasClick}
+          onInitializeGame={boardController.initializeGame}
+        />
         <StatusDisplay />
       </div>
     </div>
