@@ -13,6 +13,17 @@ export const useUIState = () => {
   const [liftedPieces, setLiftedPieces] = useState<number[]>([]);
   const [isSecondBestShown, setIsSecondBestShown] = useState<boolean>(false);
 
+  // セカンドベストを表示する関数
+  const showSecondBest = useCallback((duration: number) => {
+    setIsSecondBestShown(true);
+    setTimeout(() => setIsSecondBestShown(false), duration);
+  }, []);
+
+  // セカンドベストを非表示にする関数
+  const clearSecondBest = useCallback(() => {
+    setIsSecondBestShown(false);
+  }, []);
+
   // ハイライト管理関数
   const updateHighlightsFromLegalMoves = useCallback((legalMoves: MoveAction[]) => {
     const placeCells: number[] = [];
@@ -68,11 +79,14 @@ export const useUIState = () => {
     setHighlightedCells,
     setHighlightedPieces,
     setLiftedPieces,
-    setIsSecondBestShown,
     
     // ハイライト管理関数
     updateHighlightsFromLegalMoves,
     highlightMovementDestinations,
     clearAllHighlights,
+
+    // セカンドベスト管理関数
+    showSecondBest,
+    clearSecondBest,
   };
 }; 

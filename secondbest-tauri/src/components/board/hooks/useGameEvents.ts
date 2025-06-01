@@ -13,7 +13,7 @@ import {
 interface GameEventsDependencies {
   // コア状態更新関数
   updateBoardFromGameState: (gameState: any) => void;
-  setIsSecondBestShown: (show: boolean) => void;
+  showSecondBest: (duration: number) => void;
   setTurnPhase: (phase: TurnPhase) => void;
   setUserInteractionEnabled: (enabled: boolean) => void;
   showErrorMessage: (message: string) => void;
@@ -27,7 +27,7 @@ interface GameEventsDependencies {
 export const useGameEvents = (deps: GameEventsDependencies) => {
   const {
     updateBoardFromGameState,
-    setIsSecondBestShown,
+    showSecondBest,
     setTurnPhase,
     setUserInteractionEnabled,
     showErrorMessage,
@@ -78,16 +78,14 @@ export const useGameEvents = (deps: GameEventsDependencies) => {
 
   const handleAiSecondBest = useCallback((event: AiSecondBestEvent) => {
     console.log('AI Second Best宣言を受信:', event);
-    setIsSecondBestShown(true);
-    setTimeout(() => setIsSecondBestShown(false), 2000);
-    
+    showSecondBest(2000);
     updateBoardFromGameState(event.new_state);
     promptForAlternativeMove();
     highlightAlternativeMoves();
     
     // ユーザー操作を有効化
     setUserInteractionEnabled(true);
-  }, [updateBoardFromGameState, promptForAlternativeMove, highlightAlternativeMoves, setIsSecondBestShown, setUserInteractionEnabled]);
+  }, [updateBoardFromGameState, promptForAlternativeMove, highlightAlternativeMoves, showSecondBest, setUserInteractionEnabled]);
 
   const handleAiSecondMove = useCallback((event: AiSecondMoveEvent) => {
     updateBoardFromGameState(event.new_state);
