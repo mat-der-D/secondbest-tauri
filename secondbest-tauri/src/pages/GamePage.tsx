@@ -13,6 +13,12 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
   // ボードの状態をGamePageで管理
   const boardController = useBoardController();
 
+  const onRefreshClick = () => {
+    if (!boardController.userInteractionEnabled) return;
+    boardController.setShowSecondBest(false);
+    boardController.initializeGame();
+  };
+
   return (
     <div className="game-page">
       <div className="game-header">
@@ -20,7 +26,7 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
           <button className="home-button" onClick={onHomeClick}>
             🏠
           </button>
-          <button className="refresh-button">
+          <button className="refresh-button" onClick={onRefreshClick}>
             🔄
           </button>
         </div>

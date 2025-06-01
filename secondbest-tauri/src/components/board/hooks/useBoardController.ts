@@ -77,5 +77,9 @@ export const useBoardController = () => {
     // 操作に必要な関数
     initializeGame: gameFlow.initializeGameWithErrorHandling,
     handleCanvasClick: canvasInteraction.handleCanvasClick,
+    
+    // 追加の状態と関数
+    setShowSecondBest: uiState.setShowSecondBest,
+    userInteractionEnabled: userInteraction.userInteractionEnabled,
   };
 }; 
