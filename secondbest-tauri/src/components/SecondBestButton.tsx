@@ -9,9 +9,10 @@ interface SecondBestButtonProps {
   showSecondBest: (duration: number) => void;
   updateBoardFromGameState: (gameState: any) => void;
   setUserInteractionEnabled: (enabled: boolean) => void;
+  clearAllHighlights: () => void;
 }
 
-const SecondBestButton: React.FC<SecondBestButtonProps> = ({ userInteractionEnabled, canDeclareSecondBest, showSecondBest, updateBoardFromGameState, setUserInteractionEnabled }) => {
+const SecondBestButton: React.FC<SecondBestButtonProps> = ({ userInteractionEnabled, canDeclareSecondBest, showSecondBest, updateBoardFromGameState, setUserInteractionEnabled, clearAllHighlights }) => {
 
   const onClick = async () => {
     if (!userInteractionEnabled) return;
@@ -19,6 +20,7 @@ const SecondBestButton: React.FC<SecondBestButtonProps> = ({ userInteractionEnab
     showSecondBest(BOARD_CONSTANTS.SECOND_BEST_DURATION);
     const newState = await GameAPI.declareSecondBest();
     updateBoardFromGameState(newState);
+    clearAllHighlights();
     setUserInteractionEnabled(false);
   }
 

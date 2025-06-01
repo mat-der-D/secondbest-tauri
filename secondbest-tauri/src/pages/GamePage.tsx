@@ -39,6 +39,7 @@ const GamePage: React.FC<GamePageProps> = ({ onHomeClick }) => {
           showSecondBest={boardController.showSecondBest}
           updateBoardFromGameState={boardController.updateBoardFromGameState}
           setUserInteractionEnabled={boardController.setUserInteractionEnabled}
+          clearAllHighlights={boardController.clearAllHighlights}
         />
         <Board 
           pieces={boardController.pieces}

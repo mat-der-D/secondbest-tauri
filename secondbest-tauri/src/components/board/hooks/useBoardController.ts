@@ -85,5 +85,6 @@ export const useBoardController = () => {
     userInteractionEnabled: userInteraction.userInteractionEnabled,
     updateBoardFromGameState: gameCore.updateBoardFromGameState,
     setUserInteractionEnabled: userInteraction.setUserInteractionEnabled,
+    clearAllHighlights: uiState.clearAllHighlights,
   };
 }; 
